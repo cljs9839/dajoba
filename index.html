@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#3182F6" />
+<title>다잡아 웹앱 v3.1.0 — 선착순 현황 배너</title>
+
+<!-- ============================================================
+     다잡아 웹앱 (DaJobA Web) — 2WAY MVP · Supabase 연결판
+     APP_VERSION: web_v3.1.0
+     작성: 2026-08-18 / DYD컴퍼니 이진성 대표 + Claude
+
+     v1.0.0 과의 차이:
+       - 데이터가 브라우저 밖(Supabase)에 저장됨 → 서로 다른 기기 간 매칭 성립
+       - 이메일 로그인 (페이스북은 Supabase 대시보드에서 켜면 코드 1줄 추가)
+       - 크레딧은 서버 트리거가 지급 (화면에서 조작 불가)
+       - 실시간 반영: 구직자가 지원하면 중개자 화면에 즉시 표시
+
+     먼저 dajoba_supabase_schema.sql 을 Supabase SQL Editor 에서 실행하세요.
+     ============================================================ -->
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { ink:'#16181D', sub:'#6B7280', line:'#E8EBF0', wash:'#F4F6FA', paper:'#FFFFFF',
+    seeker:'#3182F6', seekerbg:'#EDF4FE', broker:'#FF6F0F', brokerbg:'#FFF4EC',
+    credit:'#F5A524', ok:'#10B981', danger:'#EF4444', fb:'#1877F2' },
+  fontFamily: { sans:['Pretendard Variable','Pretendard','system-ui','sans-serif'],
+    mono:['IBM Plex Mono','ui-monospace','monospace'] },
+}}}
+</script>
+<style>
+  body { font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif; background:#E9ECF2; color:#16181D; margin:0; }
+  .num { font-family:'IBM Plex Mono',monospace; font-variant-numeric:tabular-nums; }
+  .tight { letter-spacing:-0.035em; }
+  .noscroll::-webkit-scrollbar{display:none} .noscroll{scrollbar-width:none}
+  .fade-in{animation:fadeIn .22s ease both} @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .sheet-up{animation:sheetUp .3s cubic-bezier(.2,.9,.3,1) both} @keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+  .credit-pop{animation:creditPop 1.6s ease-out forwards}
+  @keyframes creditPop{0%{opacity:0;transform:translateY(6px) scale(.9)}18%{opacity:1;transform:translateY(-2px) scale(1.08)}72%{opacity:1;transform:translateY(-14px)}100%{opacity:0;transform:translateY(-26px)}}
+  .spin{animation:spin 1s linear infinite} @keyframes spin{to{transform:rotate(360deg)}}
+  button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #16181D;outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const APP_VERSION = 'web_v3.1.0';
+
+/* ============================================================
+   ⭐ 여기 두 줄만 채우면 연결됩니다
+   Supabase 대시보드 → Project Settings → API 에서 복사
+   ============================================================ */
+const SUPABASE_URL      = 'https://keuoryeuihnyeajyfdxx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XKE70rASoh2vZHCXVmfmXw_XbO___He';
+/* ========================================================== */
+
+const CONFIGURED = !SUPABASE_URL.startsWith('PASTE') && !SUPABASE_ANON_KEY.startsWith('PASTE');
+const sb = CONFIGURED ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ============================================================
+   다국어
+   ============================================================ */
+const I18N = {
+  ko: {
+    appName:'다잡아', tagline:'한국에서 일자리 찾는 가장 빠른 길',
+    introBody:'믿을 수 있는 사람이 소개해 주는 일자리.\n계정 하나면 바로 시작합니다.',
+    start:'시작하기', email:'이메일', password:'비밀번호', name:'이름',
+    signIn:'로그인', signUp:'회원가입', toSignUp:'처음이신가요? 회원가입',
+    toSignIn:'이미 계정이 있어요', pwHint:'6자 이상',
+    agree:'개인정보 수집·이용에 동의합니다', view:'보기', required:'필수',
+    privacyTitle:'개인정보 수집·이용 안내',
+    privacyItems:'수집 항목 · 이름, 이메일, 연락처, 체류자격, 희망 지역·시간, 한국어 수준',
+    privacyPurpose:'이용 목적 · 일자리 매칭 및 연결',
+    privacyKeep:'보유 기간 · 회원 탈퇴 시까지',
+    privacyRight:'동의를 거부할 수 있으나, 거부 시 매칭 서비스를 이용할 수 없습니다.',
+    roleTitle:'어떤 목적으로 오셨나요?', roleSub:'한 번 정하면 바꿀 수 없어요',
+    roleSeeker:'일자리를 찾고 있어요', roleSeekerSub:'가게를 소개받고 지원합니다',
+    roleBroker:'일자리를 소개할 수 있어요', roleBrokerSub:'가게를 등록하고 크레딧을 받습니다',
+    next:'다음', cancel:'취소', close:'닫기', retry:'다시 시도', loading:'불러오는 중',
+    obTitle:'필수 정보만 알려주세요', obSub:'네 가지만 고르면 끝나요',
+    visa:'체류자격', region:'희망 지역', shift:'일할 수 있는 시간', korean:'한국어',
+    multi:'여러 개 선택', goJobs:'일자리 보기',
+    tabHome:'일자리', tabApplied:'내 지원', tabMe:'내 정보',
+    jobsTitle:'나에게 맞는 일자리', match:'매칭', wage:'시급', hiring:'모집',
+    apply:'지원하기', applied:'지원함', reason:'매칭 근거', basic:'기본 조건',
+    introducedBy:'소개', emptyJobs:'아직 등록된 일자리가 없어요',
+    emptyJobsSub:'중개자가 가게를 등록하면 여기에 나타납니다.',
+    myApps:'내 지원 현황', emptyApps:'아직 지원한 곳이 없어요', emptyAppsSub:'일자리 탭에서 지원해 보세요.',
+    stPending:'확인 중', stAccepted:'매칭 완료', stHired:'출근 확인', stRejected:'이번엔 어려워요',
+    contactOpen:'연락처가 공개되었어요', contactHint:'중개자에게 직접 연락하세요',
+    obBrokerTitle:'두 가지만 알려주세요', contact:'연락 방법',
+    contactHint2:'매칭된 사람에게만 공개돼요', contactPh:'예: Zalo · mai_hn88',
+    myRegions:'소개할 수 있는 지역', goRegister:'가게 등록하러 가기',
+    tabStores:'내 가게', tabIncoming:'지원자', tabCredit:'크레딧',
+    addStore:'가게 등록하기', storeTitle:'가게 등록',
+    storeName:'가게 이름', storeNamePh:'예: 반포식스 서울시청점', bizType:'업종',
+    headcount:'모집 인원', shiftNeed:'필요한 시간대',
+    memo:'구직자에게 한마디', memoPh:'예: 베트남 직원 3명 근무 중. 한국어 초급도 괜찮아요.',
+    optional:'선택', saveAndEarn:'등록하고 크레딧 받기',
+    emptyStores:'등록한 가게가 없어요', emptyStoresSub:'가게를 등록하면 구직자에게 노출됩니다.',
+    incoming:'들어온 지원', emptyIncoming:'아직 지원이 없어요',
+    emptyIncomingSub:'가게를 등록하면 지원이 들어옵니다.',
+    accept:'수락하기', reject:'거절', confirmFirstDay:'첫 출근 확인', rejected:'거절함',
+    settledTarget:'정산 대상', myCredit:'내 크레딧',
+    worth:'원 상당', toNext:'까지', maxTier:'최고 등급', withdrawFrom:'부터 출금',
+    payoutFull:'100% 환산 대상', payoutPartial:'선착순 마감',
+    payoutPartialNote:'다음 이벤트를 기다려주세요', rateLabel:'환산율',
+    seatsTitle:'100% 환산 선착순', seatsLeft:'자리 남음', seatsClosed:'선착순 마감',
+    seatsSub:'지금 매칭을 성사시키면 100% 환산 대상이 됩니다',
+    earnRules:'적립 규칙', ruleStore:'가게 등록', ruleMatch:'매칭 성사', ruleFirst:'첫 출근 확인',
+    history:'적립 내역', emptyHistory:'아직 적립 내역이 없어요',
+    withdraw:'출금 신청', withdrawLocked:'까지 모으면 출금할 수 있어요',
+    role:'역할', logout:'로그아웃', langLabel:'언어',
+    unit:'원', people:'명', places:'곳',
+  },
+  vi: {
+    appName:'다잡아 DaJobA', tagline:'Cách nhanh nhất để tìm việc tại Hàn Quốc',
+    introBody:'Việc làm do người đáng tin giới thiệu.\nChỉ cần một tài khoản là bắt đầu ngay.',
+    start:'Bắt đầu', email:'Email', password:'Mật khẩu', name:'Tên',
+    signIn:'Đăng nhập', signUp:'Đăng ký', toSignUp:'Lần đầu? Đăng ký',
+    toSignIn:'Tôi đã có tài khoản', pwHint:'Từ 6 ký tự',
+    agree:'Tôi đồng ý cho thu thập và sử dụng thông tin cá nhân', view:'Xem', required:'Bắt buộc',
+    privacyTitle:'Thu thập và sử dụng thông tin cá nhân',
+    privacyItems:'Thông tin thu thập · Tên, email, liên hệ, tư cách lưu trú, khu vực và giờ mong muốn, trình độ tiếng Hàn',
+    privacyPurpose:'Mục đích · Kết nối và giới thiệu việc làm',
+    privacyKeep:'Thời gian lưu · Đến khi bạn xóa tài khoản',
+    privacyRight:'Bạn có thể từ chối, nhưng khi đó không thể dùng dịch vụ ghép việc.',
+    roleTitle:'Bạn đến với mục đích gì?', roleSub:'Chọn rồi thì không đổi được',
+    roleSeeker:'Tôi đang tìm việc', roleSeekerSub:'Xem quán được giới thiệu và ứng tuyển',
+    roleBroker:'Tôi có thể giới thiệu việc', roleBrokerSub:'Đăng quán và nhận điểm thưởng',
+    next:'Tiếp', cancel:'Hủy', close:'Đóng', retry:'Thử lại', loading:'Đang tải',
+    obTitle:'Chỉ cần thông tin cơ bản', obSub:'Chọn 4 mục là xong',
+    visa:'Tư cách lưu trú', region:'Khu vực mong muốn', shift:'Thời gian có thể làm', korean:'Tiếng Hàn',
+    multi:'Chọn nhiều', goJobs:'Xem việc làm',
+    tabHome:'Việc làm', tabApplied:'Đã ứng tuyển', tabMe:'Của tôi',
+    jobsTitle:'Việc phù hợp với bạn', match:'Phù hợp', wage:'Lương giờ', hiring:'Tuyển',
+    apply:'Ứng tuyển', applied:'Đã ứng tuyển', reason:'Lý do phù hợp', basic:'Điều kiện cơ bản',
+    introducedBy:'Giới thiệu', emptyJobs:'Chưa có việc làm nào',
+    emptyJobsSub:'Khi người giới thiệu đăng quán, việc sẽ hiện ở đây.',
+    myApps:'Tình trạng ứng tuyển', emptyApps:'Bạn chưa ứng tuyển nơi nào', emptyAppsSub:'Hãy ứng tuyển ở tab Việc làm.',
+    stPending:'Đang xem xét', stAccepted:'Đã ghép', stHired:'Đã xác nhận đi làm', stRejected:'Lần này chưa được',
+    contactOpen:'Đã mở thông tin liên hệ', contactHint:'Hãy liên hệ trực tiếp với người giới thiệu',
+    obBrokerTitle:'Chỉ cần hai mục', contact:'Cách liên hệ',
+    contactHint2:'Chỉ hiện với người đã ghép', contactPh:'VD: Zalo · mai_hn88',
+    myRegions:'Khu vực có thể giới thiệu', goRegister:'Đăng quán ngay',
+    tabStores:'Quán của tôi', tabIncoming:'Ứng viên', tabCredit:'Điểm thưởng',
+    addStore:'Đăng quán', storeTitle:'Đăng quán',
+    storeName:'Tên quán', storeNamePh:'VD: Banpo Six Seoul City Hall', bizType:'Ngành',
+    headcount:'Số người tuyển', shiftNeed:'Thời gian cần',
+    memo:'Nhắn với ứng viên', memoPh:'VD: Có 3 nhân viên người Việt. Tiếng Hàn sơ cấp cũng được.',
+    optional:'Tùy chọn', saveAndEarn:'Đăng và nhận điểm',
+    emptyStores:'Chưa có quán nào', emptyStoresSub:'Đăng quán để ứng viên nhìn thấy.',
+    incoming:'Ứng tuyển đến', emptyIncoming:'Chưa có ứng tuyển', emptyIncomingSub:'Đăng quán thì ứng tuyển sẽ đến.',
+    accept:'Chấp nhận', reject:'Từ chối', confirmFirstDay:'Xác nhận đi làm', rejected:'Đã từ chối',
+    settledTarget:'Sẽ thanh toán', myCredit:'Điểm của tôi',
+    worth:'won', toNext:'nữa đến', maxTier:'Hạng cao nhất', withdrawFrom:'trở lên mới rút được',
+    payoutFull:'Quy đổi 100%', payoutPartial:'Đã hết suất ưu đãi',
+    payoutPartialNote:'Hãy chờ đợt tiếp theo', rateLabel:'Tỷ lệ quy đổi',
+    seatsTitle:'Ưu đãi quy đổi 100%', seatsLeft:'suất còn lại', seatsClosed:'Đã hết suất',
+    seatsSub:'Ghép thành công ngay để nhận quy đổi 100%',
+    earnRules:'Cách tích điểm', ruleStore:'Đăng quán', ruleMatch:'Ghép thành công', ruleFirst:'Xác nhận đi làm',
+    history:'Lịch sử tích điểm', emptyHistory:'Chưa có lịch sử',
+    withdraw:'Yêu cầu rút', withdrawLocked:'thì có thể rút',
+    role:'Vai trò', logout:'Đăng xuất', langLabel:'Ngôn ngữ',
+    unit:'won', people:'người', places:'nơi',
+  },
+};
+
+const OPT = {
+  region: [
+    { id:'r1', ko:'서울 중구·종로', vi:'Jung-gu · Jongno' },
+    { id:'r2', ko:'서울 강남·서초', vi:'Gangnam · Seocho' },
+    { id:'r3', ko:'서울 마포·서대문', vi:'Mapo · Seodaemun' },
+    { id:'r4', ko:'서울 광진·성동', vi:'Gwangjin · Seongdong' },
+    { id:'r5', ko:'경기 남부', vi:'Nam Gyeonggi' },
+  ],
+  shift: [
+    { id:'s1', ko:'평일 낮', vi:'Ngày thường · ban ngày' },
+    { id:'s2', ko:'평일 저녁', vi:'Ngày thường · buổi tối' },
+    { id:'s3', ko:'주말 낮', vi:'Cuối tuần · ban ngày' },
+    { id:'s4', ko:'주말 저녁', vi:'Cuối tuần · buổi tối' },
+  ],
+  visa: [
+    { id:'D-2', ko:'D-2 유학', vi:'D-2 Du học', noteKo:'시간제취업허가 필요', noteVi:'Cần giấy phép làm thêm' },
+    { id:'D-4', ko:'D-4 어학연수', vi:'D-4 Học tiếng', noteKo:'입국 6개월 후 · 허가 필요', noteVi:'Sau 6 tháng · cần giấy phép' },
+    { id:'F-2', ko:'F-2 거주', vi:'F-2 Cư trú', noteKo:'취업 제한 없음', noteVi:'Không giới hạn' },
+    { id:'F-6', ko:'F-6 결혼이민', vi:'F-6 Kết hôn', noteKo:'취업 제한 없음', noteVi:'Không giới hạn' },
+  ],
+  korean: [
+    { id:'k1', ko:'입문', vi:'Mới bắt đầu' }, { id:'k2', ko:'초급', vi:'Sơ cấp' },
+    { id:'k3', ko:'중급', vi:'Trung cấp' }, { id:'k4', ko:'고급', vi:'Cao cấp' },
+  ],
+  biz: [
+    { id:'b1', ko:'요식업 홀', vi:'Nhà hàng · phục vụ' }, { id:'b2', ko:'요식업 주방', vi:'Nhà hàng · bếp' },
+    { id:'b3', ko:'카페', vi:'Quán cà phê' }, { id:'b4', ko:'편의점', vi:'Cửa hàng tiện lợi' },
+    { id:'b5', ko:'물류·창고', vi:'Kho vận' }, { id:'b6', ko:'기타', vi:'Khác' },
+  ],
+};
+const labelOf = (g,id,lang) => { const o = OPT[g].find(x=>x.id===id); return o ? o[lang] : (id||''); };
+
+const CREDIT = { STORE:100, MATCH:500, FIRSTDAY:2000 };
+const TIERS = [
+  { ko:'브론즈', vi:'Đồng', min:0, color:'#B08D57' },
+  { ko:'실버', vi:'Bạc', min:3000, color:'#8E9AAF' },
+  { ko:'골드', vi:'Vàng', min:10000, color:'#F5A524' },
+];
+const WITHDRAW_MIN = 10000;
+const tierOf = c => [...TIERS].reverse().find(t=>c>=t.min) || TIERS[0];
+const nextTier = c => TIERS.find(t=>c<t.min) || null;
+const won = n => Number(n||0).toLocaleString('ko-KR');
+
+function matchScore(seeker, store) {
+  if (!seeker || !store) return { score:0, reasons:[] };
+  let s = 40; const reasons = [];
+  if (seeker.region === store.region) { s += 25; reasons.push('region'); }
+  if ((seeker.shifts||[]).some(x => (store.shifts||[]).includes(x))) { s += 20; reasons.push('shift'); }
+  if (seeker.visa) { s += 15; reasons.push('visa'); }
+  return { score: Math.min(s,98), reasons };
+}
+const REASON_TXT = {
+  ko:{ region:'지역 일치', shift:'시간대 일치', visa:'체류자격 확인됨' },
+  vi:{ region:'Cùng khu vực', shift:'Trùng thời gian', visa:'Đã xác nhận tư cách' },
+};
+
+/* ============================================================
+   ⭐ 데이터 계층 — 화면 코드는 오직 api.* 만 부릅니다
+   ============================================================ */
+const api = {
+  async signUp(email, password, name) {
+    const { data, error } = await sb.auth.signUp({ email, password, options:{ data:{ name } } });
+    if (error) throw error;
+    return data.user;
+  },
+  async signIn(email, password) {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data.user;
+  },
+  async signOut() { await sb.auth.signOut(); },
+
+  async getSession() { const { data } = await sb.auth.getSession(); return data.session; },
+
+  async getProfile(uid) {
+    const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async createSeeker(uid, name, f) {
+    const { data, error } = await sb.from('profiles').insert({
+      id:uid, role:'SEEKER', name, visa:f.visa, region:f.region, shifts:f.shifts, korean:f.korean,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async createBroker(uid, name, f) {
+    const { data, error } = await sb.from('profiles').insert({
+      id:uid, role:'BROKER', name, regions:f.regions,
+    }).select().single();
+    if (error) throw error;
+    const { error: e2 } = await sb.from('broker_contacts').insert({ broker_id:uid, contact:f.contact });
+    if (e2) throw e2;
+    return data;
+  },
+
+  // 구직자: 전체 가게 + 등록한 중개자 이름
+  async listStores() {
+    const { data, error } = await sb.from('stores')
+      .select('*, broker:profiles!stores_broker_id_fkey(id,name)')
+      .eq('active', true).order('created_at', { ascending:false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async myStores(uid) {
+    const { data, error } = await sb.from('stores').select('*')
+      .eq('broker_id', uid).order('created_at', { ascending:false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async addStore(uid, f) {
+    const { data, error } = await sb.from('stores').insert({
+      broker_id:uid, name:f.name, biz:f.biz, region:f.region,
+      wage:f.wage, headcount:f.headcount, shifts:f.shifts, memo:f.memo || null,
+    }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async apply(storeId, uid) {
+    const { data, error } = await sb.from('applications')
+      .insert({ store_id:storeId, seeker_id:uid }).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  // 구직자: 내 지원 + 가게 + 중개자
+  async myApplications(uid) {
+    const { data, error } = await sb.from('applications')
+      .select('*, store:stores(*, broker:profiles!stores_broker_id_fkey(id,name))')
+      .eq('seeker_id', uid).order('created_at', { ascending:false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  // ⭐ 연락처는 매칭 수락 후에만 서버가 내려줍니다 (RLS)
+  async getContacts() {
+    const { data, error } = await sb.from('broker_contacts').select('*');
+    if (error) return [];
+    return data || [];
+  },
+
+  // 중개자: 내 가게로 들어온 지원 + 지원자 프로필
+  async incoming(uid) {
+    const { data, error } = await sb.from('applications')
+      .select('*, store:stores!inner(*), seeker:profiles!applications_seeker_id_fkey(*)')
+      .eq('store.broker_id', uid).order('created_at', { ascending:false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async decide(appId, status) {
+    const { error } = await sb.from('applications').update({ status }).eq('id', appId);
+    if (error) throw error;
+  },
+
+  async ledger(uid) {
+    const { data, error } = await sb.from('credit_ledger').select('*')
+      .eq('broker_id', uid).order('created_at', { ascending:false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  // 내 환산 정보 (credits, tier, rate%, 환산 금액 won)
+  async myPayout() {
+    const { data, error } = await sb.rpc('my_payout');
+    if (error) return null;
+    return (data && data[0]) || null;
+  },
+
+  // 선착순 현황 (full_count, cap, remaining)
+  async payoutStatus() {
+    const { data, error } = await sb.rpc('payout_status');
+    if (error) return null;
+    return (data && data[0]) || null;
+  },
+
+  // 실시간: 지원 테이블 변경 감지
+  watchApplications(onChange) {
+    const ch = sb.channel('apps-live')
+      .on('postgres_changes', { event:'*', schema:'public', table:'applications' }, onChange)
+      .subscribe();
+    return () => sb.removeChannel(ch);
+  },
+};
+
+/* ============================================================
+   공용 UI
+   ============================================================ */
+const Badge = ({ children, tone='gray' }) => {
+  const m = { gray:'bg-wash text-sub', seeker:'bg-seekerbg text-seeker', broker:'bg-brokerbg text-broker',
+    ok:'bg-emerald-50 text-ok', credit:'bg-amber-50 text-[#B77B0B]' };
+  return <span className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[11px] font-semibold ${m[tone]}`}>{children}</span>;
+};
+const Avatar = ({ name, tone='seeker', size=40 }) => (
+  <div className="shrink-0 rounded-full grid place-items-center text-white font-bold"
+       style={{ width:size, height:size, background:tone==='broker'?'#FF6F0F':'#3182F6', fontSize:size*0.42 }}>
+    {(name||'?').trim().charAt(0).toUpperCase()}
+  </div>
+);
+const Field = ({ label, hint, children }) => (
+  <div>
+    <div className="flex items-baseline justify-between mb-1.5">
+      <span className="text-[13.5px] font-semibold">{label}</span>
+      {hint && <span className="text-[11px] text-sub">{hint}</span>}
+    </div>
+    {children}
+  </div>
+);
+const inputCls = 'w-full h-12 px-3.5 rounded-xl border border-line bg-paper text-[15px] placeholder:text-sub/60';
+
+const Chips = ({ group, value, onChange, multi=false, tone='seeker', lang }) => {
+  const on = tone==='broker' ? 'bg-broker text-white border-broker' : 'bg-seeker text-white border-seeker';
+  const isOn = id => multi ? value.includes(id) : value===id;
+  const toggle = id => multi ? onChange(value.includes(id)?value.filter(v=>v!==id):[...value,id]) : onChange(id);
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {OPT[group].map(o=>(
+        <button key={o.id} type="button" onClick={()=>toggle(o.id)}
+          className={`px-3.5 h-10 rounded-xl border text-[13.5px] font-medium ${isOn(o.id)?on:'bg-paper border-line text-sub'}`}>
+          {o[lang]}
+        </button>
+      ))}
+    </div>
+  );
+};
+const Empty = ({ title, body }) => (
+  <div className="rounded-2xl border border-dashed border-line p-6 text-center">
+    <div className="text-[14px] font-semibold text-ink/70">{title}</div>
+    {body && <p className="text-[12.5px] text-sub mt-1 leading-relaxed">{body}</p>}
+  </div>
+);
+const Spinner = ({ label }) => (
+  <div className="py-16 flex flex-col items-center gap-3">
+    <svg className="spin" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round">
+      <path d="M12 3a9 9 0 1 0 9 9" /></svg>
+    {label && <span className="text-[12.5px] text-sub">{label}</span>}
+  </div>
+);
+const ErrorBox = ({ msg, onRetry, retryLabel }) => (
+  <div className="m-5 rounded-2xl border border-danger/30 bg-red-50 p-4">
+    <p className="text-[13px] text-danger leading-relaxed break-words">{msg}</p>
+    {onRetry && <button onClick={onRetry} className="mt-3 h-10 px-4 rounded-xl bg-danger text-white text-[13px] font-semibold">{retryLabel}</button>}
+  </div>
+);
+const Sheet = ({ children, onClose }) => {
+  useEffect(()=>{ const h=e=>e.key==='Escape'&&onClose(); window.addEventListener('keydown',h);
+    return ()=>window.removeEventListener('keydown',h); },[onClose]);
+  return (
+    <div className="fixed inset-0 z-50 bg-ink/45 flex items-end justify-center fade-in" onClick={onClose}>
+      <div className="w-full max-w-[480px] max-h-[90vh] overflow-y-auto noscroll bg-paper rounded-t-2xl sheet-up"
+           onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true">{children}</div>
+    </div>
+  );
+};
+const Shell = ({ children, bar }) => (
+  <div className="min-h-screen flex justify-center">
+    <div className="w-full max-w-[480px] bg-paper min-h-screen relative shadow-[0_0_40px_rgba(0,0,0,.06)]">
+      {children}{bar}
+    </div>
+  </div>
+);
+const Header = ({ title, right }) => (
+  <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-line px-5 h-14 flex items-center justify-between">
+    <span className="text-[17px] font-bold tight">{title}</span>{right}
+  </header>
+);
+const TabBar = ({ tabs, active, onChange, tone }) => (
+  <nav className="sticky bottom-0 z-20 bg-paper/95 backdrop-blur border-t border-line grid"
+       style={{ gridTemplateColumns:`repeat(${tabs.length},1fr)` }}>
+    {tabs.map(tb=>{
+      const on = active===tb.key;
+      return (
+        <button key={tb.key} onClick={()=>onChange(tb.key)} className="h-16 flex items-center justify-center relative">
+          <span className={`text-[12px] font-semibold ${on?(tone==='broker'?'text-broker':'text-seeker'):'text-sub'}`}>{tb.label}</span>
+          {tb.badge>0 && <span className="absolute top-3 right-[24%] min-w-[17px] h-[17px] px-1 rounded-full bg-danger text-white num text-[10px] font-bold grid place-items-center">{tb.badge}</span>}
+          {on && <span className={`absolute bottom-0 h-[3px] w-9 rounded-t-full ${tone==='broker'?'bg-broker':'bg-seeker'}`} />}
+        </button>
+      );
+    })}
+  </nav>
+);
+
+/* ============================================================
+   설정 안내 화면 (URL/KEY 미입력 시)
+   ============================================================ */
+function SetupScreen() {
+  return (
+    <Shell>
+      <div className="p-7 pt-16">
+        <h1 className="text-[22px] font-bold tight mb-3">연결 설정이 필요합니다</h1>
+        <p className="text-[13.5px] text-sub leading-relaxed mb-6">
+          이 파일 상단의 두 줄에 Supabase 주소와 키를 넣어주세요.
+        </p>
+        <div className="rounded-2xl bg-ink text-white/90 p-4 text-[12px] leading-relaxed num overflow-x-auto">
+          const SUPABASE_URL = 'https://xxxx.supabase.co';<br />
+          const SUPABASE_ANON_KEY = 'eyJhbGci...';
+        </div>
+        <ol className="mt-6 space-y-3 text-[13.5px] leading-relaxed">
+          <li><b>1.</b> supabase.com 에서 프로젝트 생성</li>
+          <li><b>2.</b> SQL Editor 에 <span className="num text-[12px]">dajoba_supabase_schema.sql</span> 붙여넣고 Run</li>
+          <li><b>3.</b> Project Settings → API 에서 URL 과 anon key 복사</li>
+          <li><b>4.</b> Authentication → Providers → Email 켜고, Confirm email 은 끄기</li>
+          <li><b>5.</b> 위 두 줄에 붙여넣고 저장 후 새로고침</li>
+        </ol>
+      </div>
+    </Shell>
+  );
+}
+
+/* ============================================================
+   인증 화면
+   ============================================================ */
+function AuthScreen({ t, lang, setLang, onDone }) {
+  const [mode, setMode] = useState('signin');
+  const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
+  const [name, setName] = useState('');
+  const [agree, setAgree] = useState(false);
+  const [policy, setPolicy] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const ready = mode==='signin'
+    ? (email.includes('@') && pw.length>=6)
+    : (email.includes('@') && pw.length>=6 && name.trim() && agree);
+
+  const go = async () => {
+    setBusy(true); setErr('');
+    try {
+      const user = mode==='signin'
+        ? await api.signIn(email.trim(), pw)
+        : await api.signUp(email.trim(), pw, name.trim());
+      if (!user) { setErr('이메일 확인이 필요합니다. Supabase 설정에서 Confirm email 을 꺼주세요.'); setBusy(false); return; }
+      onDone();
+    } catch (e) { setErr(e.message || String(e)); setBusy(false); }
+  };
+
+  return (
+    <Shell>
+      <div className="min-h-screen flex flex-col px-6 pt-16 pb-8">
+        <div className="flex justify-end mb-6">
+          <button onClick={()=>setLang(lang==='ko'?'vi':'ko')} className="h-8 px-3 rounded-full bg-wash text-[12px] font-semibold text-sub">
+            {lang==='ko'?'Tiếng Việt':'한국어'}
+          </button>
+        </div>
+
+        <h1 className="text-[30px] font-bold tight mb-2">{t.appName}</h1>
+        <p className="text-[13.5px] text-sub leading-relaxed mb-9">{t.tagline}</p>
+
+        <div className="space-y-3">
+          {mode==='signup' && (
+            <Field label={t.name}>
+              <input className={inputCls} value={name} onChange={e=>setName(e.target.value)} />
+            </Field>
+          )}
+          <Field label={t.email}>
+            <input className={inputCls} type="email" inputMode="email" autoComplete="email"
+                   value={email} onChange={e=>setEmail(e.target.value)} />
+          </Field>
+          <Field label={t.password} hint={t.pwHint}>
+            <input className={inputCls} type="password" autoComplete={mode==='signin'?'current-password':'new-password'}
+                   value={pw} onChange={e=>setPw(e.target.value)} />
+          </Field>
+        </div>
+
+        {mode==='signup' && (
+          <div className="flex items-start gap-2.5 mt-5">
+            <button onClick={()=>setAgree(a=>!a)} aria-pressed={agree}
+              className={`w-6 h-6 rounded-md shrink-0 grid place-items-center border-2 ${agree?'bg-seeker border-seeker':'bg-paper border-line'}`}>
+              {agree && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M4 12.5l5.5 5.5L20 7"/></svg>}
+            </button>
+            <div className="text-[13px] leading-snug">
+              <span className="text-danger font-semibold">({t.required})</span>{' '}
+              <span className="text-ink/85">{t.agree}</span>{' '}
+              <button onClick={()=>setPolicy(true)} className="underline text-sub">{t.view}</button>
+            </div>
+          </div>
+        )}
+
+        {err && <p className="mt-4 text-[12.5px] text-danger leading-relaxed">{err}</p>}
+
+        <div className="flex-1" />
+
+        <button disabled={!ready||busy} onClick={go}
+          className="w-full h-14 rounded-2xl bg-seeker text-white font-bold text-[16px] disabled:opacity-30">
+          {busy ? '...' : (mode==='signin'?t.signIn:t.signUp)}
+        </button>
+        <button onClick={()=>{ setMode(m=>m==='signin'?'signup':'signin'); setErr(''); }}
+          className="w-full h-12 text-[13.5px] text-sub mt-1">
+          {mode==='signin'?t.toSignUp:t.toSignIn}
+        </button>
+
+        {policy && (
+          <Sheet onClose={()=>setPolicy(false)}>
+            <div className="p-6">
+              <h3 className="text-[17px] font-bold tight mb-4">{t.privacyTitle}</h3>
+              <div className="space-y-2.5 text-[13.5px] text-ink/85 leading-relaxed">
+                <p>{t.privacyItems}</p><p>{t.privacyPurpose}</p><p>{t.privacyKeep}</p>
+              </div>
+              <p className="text-[12px] text-sub mt-4 leading-relaxed">{t.privacyRight}</p>
+              <button onClick={()=>setPolicy(false)} className="w-full h-12 rounded-xl bg-ink text-white font-bold text-[15px] mt-6">{t.close}</button>
+            </div>
+          </Sheet>
+        )}
+      </div>
+    </Shell>
+  );
+}
+
+/* ============================================================
+   역할 선택 / 온보딩
+   ============================================================ */
+function RoleScreen({ t, onPick }) {
+  return (
+    <Shell>
+      <div className="min-h-screen px-6 pt-20 pb-8">
+        <h1 className="text-[24px] font-bold tight leading-snug mb-1.5">{t.roleTitle}</h1>
+        <p className="text-[13px] text-sub mb-8">{t.roleSub}</p>
+        <div className="space-y-3">
+          <button onClick={()=>onPick('SEEKER')} className="w-full text-left p-5 rounded-2xl border-2 border-line">
+            <div className="text-[16.5px] font-bold tight">{t.roleSeeker}</div>
+            <div className="text-[13px] text-sub mt-1">{t.roleSeekerSub}</div>
+          </button>
+          <button onClick={()=>onPick('BROKER')} className="w-full text-left p-5 rounded-2xl border-2 border-line">
+            <div className="text-[16.5px] font-bold tight">{t.roleBroker}</div>
+            <div className="text-[13px] text-sub mt-1">{t.roleBrokerSub}</div>
+            <div className="flex gap-1.5 mt-3">
+              <Badge tone="broker">+{won(CREDIT.MATCH)} C</Badge>
+              <Badge tone="credit">1 C = 1{t.unit}</Badge>
+            </div>
+          </button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function SeekerOnboard({ t, lang, busy, err, onSave }) {
+  const [f, setF] = useState({ visa:'', region:'', shifts:[], korean:'' });
+  const set = (k,v)=>setF(p=>({...p,[k]:v}));
+  const ready = f.visa && f.region && f.shifts.length && f.korean;
+  const vn = OPT.visa.find(v=>v.id===f.visa);
+  return (
+    <Shell>
+      <div className="min-h-screen px-6 pt-14 pb-28">
+        <h1 className="text-[23px] font-bold tight mb-1.5">{t.obTitle}</h1>
+        <p className="text-[13px] text-sub mb-7">{t.obSub}</p>
+        <div className="space-y-6">
+          <Field label={t.visa}>
+            <Chips group="visa" value={f.visa} onChange={v=>set('visa',v)} lang={lang} />
+            {vn && <p className="mt-2 text-[11.5px] text-sub">{vn.id} · {lang==='ko'?vn.noteKo:vn.noteVi}</p>}
+          </Field>
+          <Field label={t.region}><Chips group="region" value={f.region} onChange={v=>set('region',v)} lang={lang} /></Field>
+          <Field label={t.shift} hint={t.multi}><Chips group="shift" value={f.shifts} onChange={v=>set('shifts',v)} multi lang={lang} /></Field>
+          <Field label={t.korean}><Chips group="korean" value={f.korean} onChange={v=>set('korean',v)} lang={lang} /></Field>
+        </div>
+        {err && <p className="mt-4 text-[12.5px] text-danger">{err}</p>}
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-paper via-paper to-transparent pt-6 pb-5 px-6">
+          <div className="w-full max-w-[432px]">
+            <button disabled={!ready||busy} onClick={()=>onSave(f)}
+              className="w-full h-14 rounded-2xl bg-seeker text-white font-bold text-[16px] disabled:opacity-30">
+              {busy?'...':t.goJobs}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+function BrokerOnboard({ t, lang, busy, err, onSave }) {
+  const [contact, setContact] = useState('');
+  const [regions, setRegions] = useState([]);
+  const ready = contact.trim() && regions.length;
+  return (
+    <Shell>
+      <div className="min-h-screen px-6 pt-14 pb-28">
+        <h1 className="text-[23px] font-bold tight mb-7">{t.obBrokerTitle}</h1>
+        <div className="space-y-6">
+          <Field label={t.contact} hint={t.contactHint2}>
+            <input className={inputCls} placeholder={t.contactPh} value={contact} onChange={e=>setContact(e.target.value)} />
+          </Field>
+          <Field label={t.myRegions} hint={t.multi}>
+            <Chips group="region" value={regions} onChange={setRegions} multi tone="broker" lang={lang} />
+          </Field>
+        </div>
+        {err && <p className="mt-4 text-[12.5px] text-danger">{err}</p>}
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-paper via-paper to-transparent pt-6 pb-5 px-6">
+          <div className="w-full max-w-[432px]">
+            <button disabled={!ready||busy} onClick={()=>onSave({ contact:contact.trim(), regions })}
+              className="w-full h-14 rounded-2xl bg-broker text-white font-bold text-[16px] disabled:opacity-30">
+              {busy?'...':t.goRegister}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Shell>
+  );
+}
+
+/* ============================================================
+   구직자 앱
+   ============================================================ */
+function SeekerApp({ t, lang, setLang, me, onLogout }) {
+  const [tab, setTab] = useState('HOME');
+  const [stores, setStores] = useState(null);
+  const [apps, setApps] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [detail, setDetail] = useState(null);
+  const [err, setErr] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      setErr('');
+      const [st, ap, ct] = await Promise.all([api.listStores(), api.myApplications(me.id), api.getContacts()]);
+      setStores(st); setApps(ap); setContacts(ct);
+    } catch (e) { setErr(e.message||String(e)); setStores([]); }
+  }, [me.id]);
+
+  useEffect(()=>{ load(); }, [load]);
+  useEffect(()=> api.watchApplications(load), [load]);
+
+  const appliedIds = apps.map(a=>a.store_id);
+  const ranked = (stores||[]).map(s=>({ s, m:matchScore(me,s) })).sort((a,b)=>b.m.score-a.m.score);
+  const openCount = apps.filter(a=>a.status==='ACCEPTED').length;
+  const contactOf = brokerId => contacts.find(c=>c.broker_id===brokerId)?.contact;
+
+  const doApply = async storeId => {
+    try { await api.apply(storeId, me.id); setDetail(null); setTab('APPLIED'); await load(); }
+    catch (e) { setErr(e.message||String(e)); }
+  };
+
+  const tabs = [
+    { key:'HOME', label:t.tabHome },
+    { key:'APPLIED', label:t.tabApplied, badge:openCount },
+    { key:'ME', label:t.tabMe },
+  ];
+
+  return (
+    <Shell bar={<TabBar tabs={tabs} active={tab} onChange={setTab} tone="seeker" />}>
+      {err && <ErrorBox msg={err} onRetry={load} retryLabel={t.retry} />}
+
+      {tab==='HOME' && (
+        <>
+          <Header title={t.jobsTitle} right={<span className="num text-[12px] text-sub">{ranked.length} {t.places}</span>} />
+          {stores===null ? <Spinner label={t.loading} /> : (
+            <div className="p-5 space-y-3">
+              {ranked.length===0 && <Empty title={t.emptyJobs} body={t.emptyJobsSub} />}
+              {ranked.map(({s,m})=>(
+                <article key={s.id} onClick={()=>setDetail({s,m})} className="rounded-2xl border border-line p-4 active:bg-wash cursor-pointer">
+                  <div className="flex items-start justify-between gap-3 mb-2.5">
+                    <div className="min-w-0">
+                      <h3 className="text-[16px] font-bold tight truncate">{s.name}</h3>
+                      <p className="text-[12.5px] text-sub mt-0.5">{labelOf('biz',s.biz,lang)} · {labelOf('region',s.region,lang)}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="num text-[20px] font-semibold text-seeker leading-none">{m.score}%</div>
+                      <div className="text-[10px] text-sub mt-1">{t.match}</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <Badge tone="seeker">{t.wage} {won(s.wage)}{t.unit}</Badge>
+                    <Badge>{(s.shifts||[]).map(x=>labelOf('shift',x,lang)).join(' · ')}</Badge>
+                    <Badge>{t.hiring} {s.headcount}{t.people}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 pt-3 border-t border-line">
+                    <Avatar name={s.broker?.name} tone="broker" size={24} />
+                    <span className="text-[12px] text-sub flex-1 truncate">
+                      {t.introducedBy} <b className="text-ink font-semibold">{s.broker?.name}</b>
+                    </span>
+                    {appliedIds.includes(s.id) && <Badge>{t.applied}</Badge>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab==='APPLIED' && (
+        <>
+          <Header title={t.myApps} />
+          <div className="p-5 space-y-3">
+            {apps.length===0 && <Empty title={t.emptyApps} body={t.emptyAppsSub} />}
+            {apps.map(a=>{
+              const s = a.store;
+              const map = { PENDING:{txt:t.stPending,tone:'gray'}, ACCEPTED:{txt:t.stAccepted,tone:'ok'},
+                HIRED:{txt:t.stHired,tone:'ok'}, REJECTED:{txt:t.stRejected,tone:'gray'} }[a.status];
+              const open = a.status==='ACCEPTED'||a.status==='HIRED';
+              const ct = open ? contactOf(s?.broker?.id) : null;
+              return (
+                <div key={a.id} className={`rounded-2xl border p-4 ${open?'border-ok/40 bg-emerald-50/40':'border-line'}`}>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <h3 className="text-[15px] font-bold truncate">{s?.name}</h3>
+                    <Badge tone={map.tone}>{map.txt}</Badge>
+                  </div>
+                  <p className="text-[12px] text-sub">{labelOf('biz',s?.biz,lang)} · {t.wage} {won(s?.wage)}{t.unit}</p>
+                  {open && (
+                    <div className="mt-3 pt-3 border-t border-ok/25">
+                      <div className="text-[11.5px] text-ok font-semibold mb-1.5">{t.contactOpen}</div>
+                      <div className="flex items-center gap-2">
+                        <Avatar name={s?.broker?.name} tone="broker" size={30} />
+                        <div className="min-w-0">
+                          <div className="text-[13.5px] font-bold truncate">{s?.broker?.name}</div>
+                          <div className="text-[12.5px] text-ink/75 truncate">{ct || '...'}</div>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-sub mt-2">{t.contactHint}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab==='ME' && <MePage t={t} lang={lang} setLang={setLang} me={me} onLogout={onLogout} roleTxt={t.roleSeeker} tone="seeker" />}
+
+      {detail && (
+        <Sheet onClose={()=>setDetail(null)}>
+          <JobDetail t={t} lang={lang} data={detail} applied={appliedIds.includes(detail.s.id)} onApply={()=>doApply(detail.s.id)} />
+        </Sheet>
+      )}
+    </Shell>
+  );
+}
+
+function JobDetail({ t, lang, data, applied, onApply }) {
+  const { s, m } = data;
+  return (
+    <div className="p-6 pb-8">
+      <div className="w-10 h-1 rounded-full bg-line mx-auto mb-5" />
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <h2 className="text-[21px] font-bold tight leading-snug">{s.name}</h2>
+        <div className="shrink-0 text-right">
+          <div className="num text-[24px] font-semibold text-seeker leading-none">{m.score}%</div>
+          <div className="text-[10px] text-sub mt-1">{t.match}</div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        <Badge tone="seeker">{t.wage} {won(s.wage)}{t.unit}</Badge>
+        <Badge>{labelOf('biz',s.biz,lang)}</Badge>
+        <Badge>{labelOf('region',s.region,lang)}</Badge>
+        <Badge>{(s.shifts||[]).map(x=>labelOf('shift',x,lang)).join(' · ')}</Badge>
+        <Badge>{t.hiring} {s.headcount}{t.people}</Badge>
+      </div>
+      {s.memo && <p className="text-[14px] text-ink/85 leading-relaxed bg-wash rounded-xl p-4 mb-4">{s.memo}</p>}
+      <div className="text-[12px] text-sub mb-5">
+        {t.reason} · {m.reasons.length ? m.reasons.map(r=>REASON_TXT[lang][r]).join(' / ') : t.basic}
+      </div>
+      <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-line mb-5">
+        <Avatar name={s.broker?.name} tone="broker" size={38} />
+        <div className="min-w-0">
+          <div className="text-[11px] text-sub">{t.introducedBy}</div>
+          <div className="text-[14px] font-bold truncate">{s.broker?.name}</div>
+        </div>
+      </div>
+      <button disabled={applied} onClick={onApply}
+        className={`w-full h-14 rounded-2xl font-bold text-[16px] ${applied?'bg-wash text-sub':'bg-seeker text-white'}`}>
+        {applied?t.applied:t.apply}
+      </button>
+    </div>
+  );
+}
+
+/* ============================================================
+   중개자 앱
+   ============================================================ */
+function BrokerApp({ t, lang, setLang, me, refreshMe, onLogout }) {
+  const [tab, setTab] = useState('STORES');
+  const [stores, setStores] = useState(null);
+  const [incoming, setIncoming] = useState([]);
+  const [ledger, setLedger] = useState([]);
+  const [payout, setPayout] = useState(null);
+  const [seats, setSeats] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const [fx, setFx] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      setErr('');
+      const [st, inc, lg, pay, seat] = await Promise.all([api.myStores(me.id), api.incoming(me.id), api.ledger(me.id), api.myPayout(), api.payoutStatus()]);
+      setStores(st); setIncoming(inc); setLedger(lg); setPayout(pay); setSeats(seat);
+    } catch (e) { setErr(e.message||String(e)); setStores([]); }
+  }, [me.id]);
+
+  useEffect(()=>{ load(); }, [load]);
+  useEffect(()=> api.watchApplications(load), [load]);
+
+  const bump = a => { setFx(a); setTimeout(()=>setFx(null), 1700); };
+
+  const addStore = async d => {
+    setBusy(true);
+    try { await api.addStore(me.id, d); setFormOpen(false); await load(); await refreshMe(); bump(CREDIT.STORE); }
+    catch (e) { setErr(e.message||String(e)); }
+    setBusy(false);
+  };
+
+  const decide = async (id, status) => {
+    try {
+      await api.decide(id, status);
+      await load(); await refreshMe();
+      if (status==='ACCEPTED') bump(CREDIT.MATCH);
+      if (status==='HIRED') bump(CREDIT.FIRSTDAY);
+    } catch (e) { setErr(e.message||String(e)); }
+  };
+
+  const pending = incoming.filter(a=>a.status==='PENDING');
+  const tabs = [
+    { key:'STORES', label:t.tabStores },
+    { key:'INCOMING', label:t.tabIncoming, badge:pending.length },
+    { key:'CREDIT', label:t.tabCredit },
+    { key:'ME', label:t.tabMe },
+  ];
+
+  return (
+    <Shell bar={<TabBar tabs={tabs} active={tab} onChange={setTab} tone="broker" />}>
+      {err && <ErrorBox msg={err} onRetry={load} retryLabel={t.retry} />}
+
+      {tab==='STORES' && (
+        <>
+          <Header title={t.tabStores} right={<span className="num text-[12px] text-sub">{(stores||[]).length} {t.places}</span>} />
+          <div className="p-5 space-y-3">
+            {seats && <SeatsBanner t={t} seats={seats} />}
+            <button onClick={()=>setFormOpen(true)}
+              className="w-full h-14 rounded-2xl border-2 border-dashed border-broker/45 text-broker font-bold text-[15px] flex items-center justify-center gap-2">
+              <span className="text-[20px] leading-none">+</span>{t.addStore}
+              <span className="num text-[12.5px]">+{won(CREDIT.STORE)} C</span>
+            </button>
+            {stores===null ? <Spinner label={t.loading} /> : (<>
+              {stores.length===0 && <Empty title={t.emptyStores} body={t.emptyStoresSub} />}
+              {stores.map(s=>{
+                const n = incoming.filter(a=>a.store_id===s.id).length;
+                return (
+                  <div key={s.id} className="rounded-2xl border border-line p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="text-[15.5px] font-bold tight truncate">{s.name}</h3>
+                        <p className="text-[12.5px] text-sub mt-0.5">
+                          {labelOf('biz',s.biz,lang)} · {labelOf('region',s.region,lang)} · {t.wage} {won(s.wage)}{t.unit}
+                        </p>
+                      </div>
+                      <Badge tone={n?'broker':'gray'}>{t.tabIncoming} {n}</Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </>)}
+          </div>
+        </>
+      )}
+
+      {tab==='INCOMING' && (
+        <>
+          <Header title={t.incoming} />
+          <div className="p-5 space-y-3">
+            {incoming.length===0 && <Empty title={t.emptyIncoming} body={t.emptyIncomingSub} />}
+            {incoming.map(a=>{
+              const sk = a.seeker, s = a.store, m = matchScore(sk, s);
+              return (
+                <article key={a.id} className={`rounded-2xl border p-4 ${a.status==='PENDING'?'border-broker/45':'border-line'}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar name={sk?.name} tone="seeker" size={42} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[15px] font-bold truncate">{sk?.name}</div>
+                      <div className="text-[12px] text-sub truncate">{s?.name}</div>
+                    </div>
+                    <div className="num text-[16px] font-semibold text-seeker shrink-0">{m.score}%</div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <Badge tone="seeker">{sk?.visa}</Badge>
+                    <Badge>{labelOf('region',sk?.region,lang)}</Badge>
+                    <Badge>{(sk?.shifts||[]).map(x=>labelOf('shift',x,lang)).join(' · ')}</Badge>
+                    <Badge>{t.korean} {labelOf('korean',sk?.korean,lang)}</Badge>
+                  </div>
+                  {a.status==='PENDING' && (
+                    <div className="flex gap-2">
+                      <button onClick={()=>decide(a.id,'REJECTED')} className="h-12 px-5 rounded-xl border border-line text-[14px] font-semibold text-sub">{t.reject}</button>
+                      <button onClick={()=>decide(a.id,'ACCEPTED')} className="flex-1 h-12 rounded-xl bg-broker text-white text-[15px] font-bold flex items-center justify-center gap-1.5">
+                        {t.accept}<span className="num text-[12px] opacity-90">+{won(CREDIT.MATCH)} C</span>
+                      </button>
+                    </div>
+                  )}
+                  {a.status==='ACCEPTED' && (
+                    <div className="flex items-center gap-2">
+                      <Badge tone="ok">{t.stAccepted}</Badge>
+                      <button onClick={()=>decide(a.id,'HIRED')} className="flex-1 h-12 rounded-xl bg-ok text-white text-[15px] font-bold flex items-center justify-center gap-1.5">
+                        {t.confirmFirstDay}<span className="num text-[12px] opacity-90">+{won(CREDIT.FIRSTDAY)} C</span>
+                      </button>
+                    </div>
+                  )}
+                  {a.status==='HIRED' && <Badge tone="ok">{t.stHired} · {t.settledTarget}</Badge>}
+                  {a.status==='REJECTED' && <Badge>{t.rejected}</Badge>}
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {tab==='CREDIT' && <CreditPage t={t} lang={lang} me={me} ledger={ledger} fx={fx} payout={payout} />}
+      {tab==='ME' && <MePage t={t} lang={lang} setLang={setLang} me={me} onLogout={onLogout} roleTxt={t.roleBroker} tone="broker" />}
+
+      {formOpen && (
+        <Sheet onClose={()=>setFormOpen(false)}>
+          <StoreForm t={t} lang={lang} me={me} busy={busy} onClose={()=>setFormOpen(false)} onSave={addStore} />
+        </Sheet>
+      )}
+    </Shell>
+  );
+}
+
+function SeatsBanner({ t, seats }) {
+  const { full_count, cap, remaining } = seats;
+  const closed = remaining <= 0;
+  const pct = cap > 0 ? Math.min(100, Math.round(full_count / cap * 100)) : 100;
+
+  return (
+    <div className={`rounded-2xl p-4 ${closed ? 'bg-wash border border-line' : 'bg-broker text-white'}`}>
+      <div className="flex items-center justify-between mb-1">
+        <span className={`text-[12px] font-semibold ${closed ? 'text-sub' : 'text-white/85'}`}>
+          {t.seatsTitle}
+        </span>
+        {!closed && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">LIVE</span>
+        )}
+      </div>
+
+      {closed ? (
+        <div className="text-[17px] font-bold tight text-sub">{t.seatsClosed}</div>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-1.5">
+            <span className="num text-[30px] font-bold leading-none">{remaining}</span>
+            <span className="text-[13px] font-semibold text-white/85">{t.seatsLeft}</span>
+          </div>
+          <div className="mt-3">
+            <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
+              <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: pct + '%' }} />
+            </div>
+            <div className="flex justify-between mt-1.5 text-[10.5px] text-white/70 num">
+              <span>{full_count} / {cap}</span>
+              <span>{t.seatsSub}</span>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CreditPage({ t, lang, me, ledger, fx, payout }) {
+  const tier = tierOf(me.credits);
+  const nt = nextTier(me.credits);
+  const pct = nt ? Math.min(100, Math.round(me.credits/nt.min*100)) : 100;
+  const kindTxt = { STORE:t.ruleStore, MATCH:t.ruleMatch, FIRSTDAY:t.ruleFirst };
+
+  // 환산 정보: 서버가 준 payout 이 있으면 그걸, 없으면 잠정 100%
+  const rate  = payout ? payout.rate : 100;
+  const wonAmt = payout ? payout.won : me.credits;
+  const isPartial = rate < 100;
+
+  return (
+    <>
+      <Header title={t.tabCredit} />
+      <div className="p-5 space-y-5">
+        <div className="rounded-2xl bg-ink text-white p-5 relative overflow-hidden">
+          {fx && <div className="absolute right-5 top-12 num text-[16px] font-bold text-credit credit-pop">+{won(fx)} C</div>}
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[12px] text-white/60">{t.myCredit}</span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background:tier.color+'26', color:tier.color }}>{tier[lang]}</span>
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="num text-[36px] font-semibold leading-none tracking-tight">{won(me.credits)}</span>
+            <span className="text-[15px] text-white/60 font-semibold">C</span>
+          </div>
+          {/* 환산 금액 — tier 반영 */}
+          <div className="text-[12px] text-white/50 mt-1">
+            = {won(wonAmt)} {t.worth}
+            <span className={`ml-1.5 ${isPartial ? 'text-danger' : 'text-credit'}`}>
+              ({t.rateLabel} {rate}%)
+            </span>
+          </div>
+          {isPartial
+            ? <div className="mt-2 text-[11px] text-danger">{t.payoutPartial} · {t.payoutPartialNote}</div>
+            : <div className="mt-2 text-[11px] text-credit">{t.payoutFull}</div>}
+          <div className="mt-5">
+            <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-700" style={{ width:pct+'%', background:tier.color }} />
+            </div>
+            <div className="flex justify-between mt-2 text-[11px] text-white/50">
+              <span>{nt ? `${nt[lang]} ${t.toNext} ${won(nt.min-me.credits)} C` : t.maxTier}</span>
+              <span className="num">{won(WITHDRAW_MIN)} C {t.withdrawFrom}</span>
+            </div>
+          </div>
+        </div>
+
+        <button disabled={me.credits<WITHDRAW_MIN}
+          className="w-full py-3.5 rounded-2xl bg-credit text-white font-bold text-[15px] disabled:bg-wash disabled:text-sub">
+          {me.credits>=WITHDRAW_MIN ? t.withdraw : `${won(WITHDRAW_MIN)} C ${t.withdrawLocked}`}
+        </button>
+
+        <section>
+          <h3 className="text-[14px] font-bold tight mb-2.5">{t.earnRules}</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {[[t.ruleStore,CREDIT.STORE],[t.ruleMatch,CREDIT.MATCH],[t.ruleFirst,CREDIT.FIRSTDAY]].map(([l,v])=>(
+              <div key={l} className="rounded-xl border border-line p-3 text-center">
+                <div className="num text-[15px] font-semibold text-broker">+{won(v)}</div>
+                <div className="text-[10.5px] text-sub mt-1 leading-tight">{l}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-[14px] font-bold tight mb-2.5">{t.history}</h3>
+          {ledger.length===0 && <Empty title={t.emptyHistory} />}
+          <div className="space-y-1.5">
+            {ledger.map(l=>(
+              <div key={l.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-wash">
+                <div className="min-w-0">
+                  <div className="text-[13.5px] font-semibold truncate">{kindTxt[l.kind]||l.kind}</div>
+                  <div className="text-[11px] text-sub num">{new Date(l.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+                </div>
+                <div className="num text-[14px] font-bold text-broker shrink-0">+{won(l.amount)} C</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
+
+function StoreForm({ t, lang, me, busy, onClose, onSave }) {
+  const [f, setF] = useState({ name:'', biz:'', region:(me.regions&&me.regions[0])||'', wage:'', headcount:'1', shifts:[], memo:'' });
+  const set = (k,v)=>setF(p=>({...p,[k]:v}));
+  const ready = f.name.trim() && f.biz && f.region && f.wage && f.shifts.length;
+  return (
+    <div className="p-6 pb-8">
+      <div className="w-10 h-1 rounded-full bg-line mx-auto mb-5" />
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h2 className="text-[20px] font-bold tight">{t.storeTitle}</h2>
+          <p className="num text-[12.5px] font-semibold text-broker mt-1">+{won(CREDIT.STORE)} C</p>
+        </div>
+        <button onClick={onClose} className="text-sub text-[26px] leading-none px-1" aria-label={t.close}>×</button>
+      </div>
+      <div className="space-y-5">
+        <Field label={t.storeName}>
+          <input className={inputCls} placeholder={t.storeNamePh} value={f.name} onChange={e=>set('name',e.target.value)} />
+        </Field>
+        <Field label={t.bizType}><Chips group="biz" value={f.biz} onChange={v=>set('biz',v)} tone="broker" lang={lang} /></Field>
+        <Field label={t.region}><Chips group="region" value={f.region} onChange={v=>set('region',v)} tone="broker" lang={lang} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t.wage} hint={t.unit}>
+            <input className={inputCls} inputMode="numeric" placeholder="12000" value={f.wage}
+                   onChange={e=>set('wage',e.target.value.replace(/[^0-9]/g,''))} />
+          </Field>
+          <Field label={t.headcount} hint={t.people}>
+            <input className={inputCls} inputMode="numeric" value={f.headcount}
+                   onChange={e=>set('headcount',e.target.value.replace(/[^0-9]/g,''))} />
+          </Field>
+        </div>
+        <Field label={t.shiftNeed} hint={t.multi}>
+          <Chips group="shift" value={f.shifts} onChange={v=>set('shifts',v)} multi tone="broker" lang={lang} />
+        </Field>
+        <Field label={t.memo} hint={t.optional}>
+          <textarea className="w-full h-24 p-3.5 rounded-xl border border-line text-[15px] resize-none"
+                    placeholder={t.memoPh} value={f.memo} onChange={e=>set('memo',e.target.value)} />
+        </Field>
+      </div>
+      <button disabled={!ready||busy} onClick={()=>onSave({ ...f, wage:Number(f.wage), headcount:Number(f.headcount)||1 })}
+        className="w-full h-14 rounded-2xl bg-broker text-white font-bold text-[16px] disabled:opacity-30 mt-7">
+        {busy?'...':t.saveAndEarn}
+      </button>
+    </div>
+  );
+}
+
+function MePage({ t, lang, setLang, me, onLogout, roleTxt, tone }) {
+  return (
+    <>
+      <Header title={t.tabMe} />
+      <div className="p-5 space-y-5">
+        <div className="flex items-center gap-3.5">
+          <Avatar name={me.name} tone={tone} size={56} />
+          <div className="min-w-0">
+            <div className="text-[18px] font-bold tight truncate">{me.name}</div>
+            <div className="mt-1"><Badge tone={tone}>{roleTxt}</Badge></div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-line divide-y divide-line">
+          <div className="flex items-center justify-between px-4 py-4">
+            <span className="text-[14px] font-semibold">{t.langLabel}</span>
+            <div className="flex gap-1 p-1 rounded-lg bg-wash">
+              {[['ko','한국어'],['vi','Tiếng Việt']].map(([k,v])=>(
+                <button key={k} onClick={()=>setLang(k)}
+                  className={`px-3 h-8 rounded-md text-[12.5px] font-semibold ${lang===k?'bg-paper shadow-sm':'text-sub'}`}>{v}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-4 py-4">
+            <span className="text-[14px] font-semibold">{t.role}</span>
+            <span className="text-[13.5px] text-sub">{roleTxt}</span>
+          </div>
+          <div className="px-4 py-4"><span className="num text-[12px] text-sub">{APP_VERSION}</span></div>
+        </div>
+        <button onClick={onLogout} className="w-full py-3.5 rounded-2xl border border-line text-[14.5px] font-semibold text-sub">{t.logout}</button>
+      </div>
+    </>
+  );
+}
+
+/* ============================================================
+   루트
+   ============================================================ */
+function App() {
+  const [lang, setLang] = useState('ko');
+  const [booting, setBooting] = useState(true);
+  const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [role, setRole] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const t = I18N[lang];
+
+  const loadProfile = useCallback(async (uid) => {
+    try { setProfile(await api.getProfile(uid)); }
+    catch (e) { setErr(e.message||String(e)); }
+  }, []);
+
+  const boot = useCallback(async () => {
+    const s = await api.getSession();
+    setSession(s);
+    if (s) await loadProfile(s.user.id);
+    setBooting(false);
+  }, [loadProfile]);
+
+  useEffect(()=>{ if (CONFIGURED) boot(); else setBooting(false); }, [boot]);
+
+  useEffect(()=>{
+    if (!CONFIGURED) return;
+    const { data } = sb.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+      if (s) loadProfile(s.user.id); else setProfile(null);
+    });
+    return () => data.subscription.unsubscribe();
+  }, [loadProfile]);
+
+  if (!CONFIGURED) return <SetupScreen />;
+  if (booting) return <Shell><Spinner label={t.loading} /></Shell>;
+  if (!session) return <AuthScreen t={t} lang={lang} setLang={setLang} onDone={boot} />;
+
+  const uid = session.user.id;
+  const displayName = session.user.user_metadata?.name || session.user.email.split('@')[0];
+
+  // 프로필이 아직 없으면 역할 선택 → 온보딩
+  if (!profile) {
+    if (!role) return <RoleScreen t={t} onPick={setRole} />;
+
+    const saveSeeker = async f => {
+      setBusy(true); setErr('');
+      try { setProfile(await api.createSeeker(uid, displayName, f)); }
+      catch (e) { setErr(e.message||String(e)); }
+      setBusy(false);
+    };
+    const saveBroker = async f => {
+      setBusy(true); setErr('');
+      try { setProfile(await api.createBroker(uid, displayName, f)); }
+      catch (e) { setErr(e.message||String(e)); }
+      setBusy(false);
+    };
+
+    return role==='SEEKER'
+      ? <SeekerOnboard t={t} lang={lang} busy={busy} err={err} onSave={saveSeeker} />
+      : <BrokerOnboard t={t} lang={lang} busy={busy} err={err} onSave={saveBroker} />;
+  }
+
+  const logout = async () => { await api.signOut(); setProfile(null); setRole(null); setSession(null); };
+  const refreshMe = () => loadProfile(uid);
+
+  return profile.role==='SEEKER'
+    ? <SeekerApp t={t} lang={lang} setLang={setLang} me={profile} onLogout={logout} />
+    : <BrokerApp t={t} lang={lang} setLang={setLang} me={profile} refreshMe={refreshMe} onLogout={logout} />;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
