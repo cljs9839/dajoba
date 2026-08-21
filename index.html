@@ -4,11 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#3182F6" />
-<title>다잡아 웹앱 v3.1.0 — 선착순 현황 배너</title>
+<title>다잡아 웹앱 v3.6.0 — 베트남어 우선</title>
 
 <!-- ============================================================
      다잡아 웹앱 (DaJobA Web) — 2WAY MVP · Supabase 연결판
-     APP_VERSION: web_v3.1.0
+     APP_VERSION: web_v3.6.0
      작성: 2026-08-18 / DYD컴퍼니 이진성 대표 + Claude
 
      v1.0.0 과의 차이:
@@ -56,7 +56,7 @@ tailwind.config = { theme: { extend: {
 
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
-const APP_VERSION = 'web_v3.1.0';
+const APP_VERSION = 'web_v3.6.0';
 
 /* ============================================================
    ⭐ 여기 두 줄만 채우면 연결됩니다
@@ -117,7 +117,7 @@ const I18N = {
     worth:'원 상당', toNext:'까지', maxTier:'최고 등급', withdrawFrom:'부터 출금',
     payoutFull:'100% 환산 대상', payoutPartial:'선착순 마감',
     payoutPartialNote:'다음 이벤트를 기다려주세요', rateLabel:'환산율',
-    seatsTitle:'100% 환산 선착순', seatsLeft:'자리 남음', seatsClosed:'선착순 마감',
+    seatsTitle:'100% 적용', seatsLeft:'자리 남음', seatsClosed:'선착순 마감',
     seatsSub:'지금 매칭을 성사시키면 100% 환산 대상이 됩니다',
     earnRules:'적립 규칙', ruleStore:'가게 등록', ruleMatch:'매칭 성사', ruleFirst:'첫 출근 확인',
     history:'적립 내역', emptyHistory:'아직 적립 내역이 없어요',
@@ -168,7 +168,7 @@ const I18N = {
     worth:'won', toNext:'nữa đến', maxTier:'Hạng cao nhất', withdrawFrom:'trở lên mới rút được',
     payoutFull:'Quy đổi 100%', payoutPartial:'Đã hết suất ưu đãi',
     payoutPartialNote:'Hãy chờ đợt tiếp theo', rateLabel:'Tỷ lệ quy đổi',
-    seatsTitle:'Ưu đãi quy đổi 100%', seatsLeft:'suất còn lại', seatsClosed:'Đã hết suất',
+    seatsTitle:'Áp dụng 100%', seatsLeft:'suất còn lại', seatsClosed:'Đã hết suất',
     seatsSub:'Ghép thành công ngay để nhận quy đổi 100%',
     earnRules:'Cách tích điểm', ruleStore:'Đăng quán', ruleMatch:'Ghép thành công', ruleFirst:'Xác nhận đi làm',
     history:'Lịch sử tích điểm', emptyHistory:'Chưa có lịch sử',
@@ -374,7 +374,7 @@ const api = {
 const Badge = ({ children, tone='gray' }) => {
   const m = { gray:'bg-wash text-sub', seeker:'bg-seekerbg text-seeker', broker:'bg-brokerbg text-broker',
     ok:'bg-emerald-50 text-ok', credit:'bg-amber-50 text-[#B77B0B]' };
-  return <span className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[11px] font-semibold ${m[tone]}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[12.5px] font-semibold ${m[tone]}`}>{children}</span>;
 };
 const Avatar = ({ name, tone='seeker', size=40 }) => (
   <div className="shrink-0 rounded-full grid place-items-center text-white font-bold"
@@ -385,13 +385,13 @@ const Avatar = ({ name, tone='seeker', size=40 }) => (
 const Field = ({ label, hint, children }) => (
   <div>
     <div className="flex items-baseline justify-between mb-1.5">
-      <span className="text-[13.5px] font-semibold">{label}</span>
-      {hint && <span className="text-[11px] text-sub">{hint}</span>}
+      <span className="text-[15px] font-semibold">{label}</span>
+      {hint && <span className="text-[12.5px] text-sub">{hint}</span>}
     </div>
     {children}
   </div>
 );
-const inputCls = 'w-full h-12 px-3.5 rounded-xl border border-line bg-paper text-[15px] placeholder:text-sub/60';
+const inputCls = 'w-full h-12 px-3.5 rounded-xl border border-line bg-paper text-[17px] placeholder:text-sub/60';
 
 const Chips = ({ group, value, onChange, multi=false, tone='seeker', lang }) => {
   const on = tone==='broker' ? 'bg-broker text-white border-broker' : 'bg-seeker text-white border-seeker';
@@ -401,7 +401,7 @@ const Chips = ({ group, value, onChange, multi=false, tone='seeker', lang }) => 
     <div className="flex flex-wrap gap-1.5">
       {OPT[group].map(o=>(
         <button key={o.id} type="button" onClick={()=>toggle(o.id)}
-          className={`px-3.5 h-10 rounded-xl border text-[13.5px] font-medium ${isOn(o.id)?on:'bg-paper border-line text-sub'}`}>
+          className={`px-3.5 h-10 rounded-xl border text-[15px] font-medium ${isOn(o.id)?on:'bg-paper border-line text-sub'}`}>
           {o[lang]}
         </button>
       ))}
@@ -410,21 +410,21 @@ const Chips = ({ group, value, onChange, multi=false, tone='seeker', lang }) => 
 };
 const Empty = ({ title, body }) => (
   <div className="rounded-2xl border border-dashed border-line p-6 text-center">
-    <div className="text-[14px] font-semibold text-ink/70">{title}</div>
-    {body && <p className="text-[12.5px] text-sub mt-1 leading-relaxed">{body}</p>}
+    <div className="text-[15.5px] font-semibold text-ink/70">{title}</div>
+    {body && <p className="text-[14px] text-sub mt-1 leading-relaxed">{body}</p>}
   </div>
 );
 const Spinner = ({ label }) => (
   <div className="py-16 flex flex-col items-center gap-3">
     <svg className="spin" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round">
       <path d="M12 3a9 9 0 1 0 9 9" /></svg>
-    {label && <span className="text-[12.5px] text-sub">{label}</span>}
+    {label && <span className="text-[14px] text-sub">{label}</span>}
   </div>
 );
 const ErrorBox = ({ msg, onRetry, retryLabel }) => (
   <div className="m-5 rounded-2xl border border-danger/30 bg-red-50 p-4">
-    <p className="text-[13px] text-danger leading-relaxed break-words">{msg}</p>
-    {onRetry && <button onClick={onRetry} className="mt-3 h-10 px-4 rounded-xl bg-danger text-white text-[13px] font-semibold">{retryLabel}</button>}
+    <p className="text-[14.5px] text-danger leading-relaxed break-words">{msg}</p>
+    {onRetry && <button onClick={onRetry} className="mt-3 h-10 px-4 rounded-xl bg-danger text-white text-[14.5px] font-semibold">{retryLabel}</button>}
   </div>
 );
 const Sheet = ({ children, onClose }) => {
@@ -446,7 +446,7 @@ const Shell = ({ children, bar }) => (
 );
 const Header = ({ title, right }) => (
   <header className="sticky top-0 z-20 bg-paper/95 backdrop-blur border-b border-line px-5 h-14 flex items-center justify-between">
-    <span className="text-[17px] font-bold tight">{title}</span>{right}
+    <span className="text-[19px] font-bold tight">{title}</span>{right}
   </header>
 );
 const TabBar = ({ tabs, active, onChange, tone }) => (
@@ -455,10 +455,10 @@ const TabBar = ({ tabs, active, onChange, tone }) => (
     {tabs.map(tb=>{
       const on = active===tb.key;
       return (
-        <button key={tb.key} onClick={()=>onChange(tb.key)} className="h-16 flex items-center justify-center relative">
-          <span className={`text-[12px] font-semibold ${on?(tone==='broker'?'text-broker':'text-seeker'):'text-sub'}`}>{tb.label}</span>
-          {tb.badge>0 && <span className="absolute top-3 right-[24%] min-w-[17px] h-[17px] px-1 rounded-full bg-danger text-white num text-[10px] font-bold grid place-items-center">{tb.badge}</span>}
-          {on && <span className={`absolute bottom-0 h-[3px] w-9 rounded-t-full ${tone==='broker'?'bg-broker':'bg-seeker'}`} />}
+        <button key={tb.key} onClick={()=>onChange(tb.key)} className="h-[72px] flex items-center justify-center relative">
+          <span className={`text-[17px] font-bold ${on?(tone==='broker'?'text-broker':'text-seeker'):'text-sub'}`}>{tb.label}</span>
+          {tb.badge>0 && <span className="absolute top-4 right-[22%] min-w-[20px] h-[20px] px-1.5 rounded-full bg-danger text-white num text-[12px] font-bold grid place-items-center">{tb.badge}</span>}
+          {on && <span className={`absolute bottom-0 h-[3.5px] w-11 rounded-t-full ${tone==='broker'?'bg-broker':'bg-seeker'}`} />}
         </button>
       );
     })}
@@ -472,17 +472,17 @@ function SetupScreen() {
   return (
     <Shell>
       <div className="p-7 pt-16">
-        <h1 className="text-[22px] font-bold tight mb-3">연결 설정이 필요합니다</h1>
-        <p className="text-[13.5px] text-sub leading-relaxed mb-6">
+        <h1 className="text-[24.5px] font-bold tight mb-3">연결 설정이 필요합니다</h1>
+        <p className="text-[15px] text-sub leading-relaxed mb-6">
           이 파일 상단의 두 줄에 Supabase 주소와 키를 넣어주세요.
         </p>
-        <div className="rounded-2xl bg-ink text-white/90 p-4 text-[12px] leading-relaxed num overflow-x-auto">
+        <div className="rounded-2xl bg-ink text-white/90 p-4 text-[13.5px] leading-relaxed num overflow-x-auto">
           const SUPABASE_URL = 'https://xxxx.supabase.co';<br />
           const SUPABASE_ANON_KEY = 'eyJhbGci...';
         </div>
-        <ol className="mt-6 space-y-3 text-[13.5px] leading-relaxed">
+        <ol className="mt-6 space-y-3 text-[15px] leading-relaxed">
           <li><b>1.</b> supabase.com 에서 프로젝트 생성</li>
-          <li><b>2.</b> SQL Editor 에 <span className="num text-[12px]">dajoba_supabase_schema.sql</span> 붙여넣고 Run</li>
+          <li><b>2.</b> SQL Editor 에 <span className="num text-[13.5px]">dajoba_supabase_schema.sql</span> 붙여넣고 Run</li>
           <li><b>3.</b> Project Settings → API 에서 URL 과 anon key 복사</li>
           <li><b>4.</b> Authentication → Providers → Email 켜고, Confirm email 은 끄기</li>
           <li><b>5.</b> 위 두 줄에 붙여넣고 저장 후 새로고침</li>
@@ -524,13 +524,13 @@ function AuthScreen({ t, lang, setLang, onDone }) {
     <Shell>
       <div className="min-h-screen flex flex-col px-6 pt-16 pb-8">
         <div className="flex justify-end mb-6">
-          <button onClick={()=>setLang(lang==='ko'?'vi':'ko')} className="h-8 px-3 rounded-full bg-wash text-[12px] font-semibold text-sub">
+          <button onClick={()=>setLang(lang==='ko'?'vi':'ko')} className="h-8 px-3 rounded-full bg-wash text-[13.5px] font-semibold text-sub">
             {lang==='ko'?'Tiếng Việt':'한국어'}
           </button>
         </div>
 
-        <h1 className="text-[30px] font-bold tight mb-2">{t.appName}</h1>
-        <p className="text-[13.5px] text-sub leading-relaxed mb-9">{t.tagline}</p>
+        <h1 className="text-[33.5px] font-bold tight mb-2">{t.appName}</h1>
+        <p className="text-[15px] text-sub leading-relaxed mb-9">{t.tagline}</p>
 
         <div className="space-y-3">
           {mode==='signup' && (
@@ -554,7 +554,7 @@ function AuthScreen({ t, lang, setLang, onDone }) {
               className={`w-6 h-6 rounded-md shrink-0 grid place-items-center border-2 ${agree?'bg-seeker border-seeker':'bg-paper border-line'}`}>
               {agree && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M4 12.5l5.5 5.5L20 7"/></svg>}
             </button>
-            <div className="text-[13px] leading-snug">
+            <div className="text-[14.5px] leading-snug">
               <span className="text-danger font-semibold">({t.required})</span>{' '}
               <span className="text-ink/85">{t.agree}</span>{' '}
               <button onClick={()=>setPolicy(true)} className="underline text-sub">{t.view}</button>
@@ -562,28 +562,28 @@ function AuthScreen({ t, lang, setLang, onDone }) {
           </div>
         )}
 
-        {err && <p className="mt-4 text-[12.5px] text-danger leading-relaxed">{err}</p>}
+        {err && <p className="mt-4 text-[14px] text-danger leading-relaxed">{err}</p>}
 
         <div className="flex-1" />
 
         <button disabled={!ready||busy} onClick={go}
-          className="w-full h-14 rounded-2xl bg-seeker text-white font-bold text-[16px] disabled:opacity-30">
+          className="w-full h-14 rounded-2xl bg-seeker text-white font-bold text-[18px] disabled:opacity-30">
           {busy ? '...' : (mode==='signin'?t.signIn:t.signUp)}
         </button>
         <button onClick={()=>{ setMode(m=>m==='signin'?'signup':'signin'); setErr(''); }}
-          className="w-full h-12 text-[13.5px] text-sub mt-1">
+          className="w-full h-12 text-[15px] text-sub mt-1">
           {mode==='signin'?t.toSignUp:t.toSignIn}
         </button>
 
         {policy && (
           <Sheet onClose={()=>setPolicy(false)}>
             <div className="p-6">
-              <h3 className="text-[17px] font-bold tight mb-4">{t.privacyTitle}</h3>
-              <div className="space-y-2.5 text-[13.5px] text-ink/85 leading-relaxed">
+              <h3 className="text-[19px] font-bold tight mb-4">{t.privacyTitle}</h3>
+              <div className="space-y-2.5 text-[15px] text-ink/85 leading-relaxed">
                 <p>{t.privacyItems}</p><p>{t.privacyPurpose}</p><p>{t.privacyKeep}</p>
               </div>
-              <p className="text-[12px] text-sub mt-4 leading-relaxed">{t.privacyRight}</p>
-              <button onClick={()=>setPolicy(false)} className="w-full h-12 rounded-xl bg-ink text-white font-bold text-[15px] mt-6">{t.close}</button>
+              <p className="text-[13.5px] text-sub mt-4 leading-relaxed">{t.privacyRight}</p>
+              <button onClick={()=>setPolicy(false)} className="w-full h-12 rounded-xl bg-ink text-white font-bold text-[17px] mt-6">{t.close}</button>
             </div>
           </Sheet>
         )}
@@ -599,16 +599,16 @@ function RoleScreen({ t, onPick }) {
   return (
     <Shell>
       <div className="min-h-screen px-6 pt-20 pb-8">
-        <h1 className="text-[24px] font-bold tight leading-snug mb-1.5">{t.roleTitle}</h1>
-        <p className="text-[13px] text-sub mb-8">{t.roleSub}</p>
+        <h1 className="text-[27px] font-bold tight leading-snug mb-1.5">{t.roleTitle}</h1>
+        <p className="text-[14.5px] text-sub mb-8">{t.roleSub}</p>
         <div className="space-y-3">
           <button onClick={()=>onPick('SEEKER')} className="w-full text-left p-5 rounded-2xl border-2 border-line">
-            <div className="text-[16.5px] font-bold tight">{t.roleSeeker}</div>
-            <div className="text-[13px] text-sub mt-1">{t.roleSeekerSub}</div>
+            <div className="text-[18.5px] font-bold tight">{t.roleSeeker}</div>
+            <div className="text-[14.5px] text-sub mt-1">{t.roleSeekerSub}</div>
           </button>
           <button onClick={()=>onPick('BROKER')} className="w-full text-left p-5 rounded-2xl border-2 border-line">
-            <div className="text-[16.5px] font-bold tight">{t.roleBroker}</div>
-            <div className="text-[13px] text-sub mt-1">{t.roleBrokerSub}</div>
+            <div className="text-[18.5px] font-bold tight">{t.roleBroker}</div>
+            <div className="text-[14.5px] text-sub mt-1">{t.roleBrokerSub}</div>
             <div className="flex gap-1.5 mt-3">
               <Badge tone="broker">+{won(CREDIT.MATCH)} C</Badge>
               <Badge tone="credit">1 C = 1{t.unit}</Badge>
@@ -628,22 +628,22 @@ function SeekerOnboard({ t, lang, busy, err, onSave }) {
   return (
     <Shell>
       <div className="min-h-screen px-6 pt-14 pb-28">
-        <h1 className="text-[23px] font-bold tight mb-1.5">{t.obTitle}</h1>
-        <p className="text-[13px] text-sub mb-7">{t.obSub}</p>
+        <h1 className="text-[26px] font-bold tight mb-1.5">{t.obTitle}</h1>
+        <p className="text-[14.5px] text-sub mb-7">{t.obSub}</p>
         <div className="space-y-6">
           <Field label={t.visa}>
             <Chips group="visa" value={f.visa} onChange={v=>set('visa',v)} lang={lang} />
-            {vn && <p className="mt-2 text-[11.5px] text-sub">{vn.id} · {lang==='ko'?vn.noteKo:vn.noteVi}</p>}
+            {vn && <p className="mt-2 text-[13px] text-sub">{vn.id} · {lang==='ko'?vn.noteKo:vn.noteVi}</p>}
           </Field>
           <Field label={t.region}><Chips group="region" value={f.region} onChange={v=>set('region',v)} lang={lang} /></Field>
           <Field label={t.shift} hint={t.multi}><Chips group="shift" value={f.shifts} onChange={v=>set('shifts',v)} multi lang={lang} /></Field>
           <Field label={t.korean}><Chips group="korean" value={f.korean} onChange={v=>set('korean',v)} lang={lang} /></Field>
         </div>
-        {err && <p className="mt-4 text-[12.5px] text-danger">{err}</p>}
+        {err && <p className="mt-4 text-[14px] text-danger">{err}</p>}
         <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-paper via-paper to-transparent pt-6 pb-5 px-6">
           <div className="w-full max-w-[432px]">
             <button disabled={!ready||busy} onClick={()=>onSave(f)}
-              className="w-full h-14 rounded-2xl bg-seeker text-white font-bold text-[16px] disabled:opacity-30">
+              className="w-full h-14 rounded-2xl bg-seeker text-white font-bold text-[18px] disabled:opacity-30">
               {busy?'...':t.goJobs}
             </button>
           </div>
@@ -660,7 +660,7 @@ function BrokerOnboard({ t, lang, busy, err, onSave }) {
   return (
     <Shell>
       <div className="min-h-screen px-6 pt-14 pb-28">
-        <h1 className="text-[23px] font-bold tight mb-7">{t.obBrokerTitle}</h1>
+        <h1 className="text-[26px] font-bold tight mb-7">{t.obBrokerTitle}</h1>
         <div className="space-y-6">
           <Field label={t.contact} hint={t.contactHint2}>
             <input className={inputCls} placeholder={t.contactPh} value={contact} onChange={e=>setContact(e.target.value)} />
@@ -669,11 +669,11 @@ function BrokerOnboard({ t, lang, busy, err, onSave }) {
             <Chips group="region" value={regions} onChange={setRegions} multi tone="broker" lang={lang} />
           </Field>
         </div>
-        {err && <p className="mt-4 text-[12.5px] text-danger">{err}</p>}
+        {err && <p className="mt-4 text-[14px] text-danger">{err}</p>}
         <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-gradient-to-t from-paper via-paper to-transparent pt-6 pb-5 px-6">
           <div className="w-full max-w-[432px]">
             <button disabled={!ready||busy} onClick={()=>onSave({ contact:contact.trim(), regions })}
-              className="w-full h-14 rounded-2xl bg-broker text-white font-bold text-[16px] disabled:opacity-30">
+              className="w-full h-14 rounded-2xl bg-broker text-white font-bold text-[18px] disabled:opacity-30">
               {busy?'...':t.goRegister}
             </button>
           </div>
@@ -727,7 +727,7 @@ function SeekerApp({ t, lang, setLang, me, onLogout }) {
 
       {tab==='HOME' && (
         <>
-          <Header title={t.jobsTitle} right={<span className="num text-[12px] text-sub">{ranked.length} {t.places}</span>} />
+          <Header title={t.jobsTitle} right={<span className="num text-[13.5px] text-sub">{ranked.length} {t.places}</span>} />
           {stores===null ? <Spinner label={t.loading} /> : (
             <div className="p-5 space-y-3">
               {ranked.length===0 && <Empty title={t.emptyJobs} body={t.emptyJobsSub} />}
@@ -735,12 +735,12 @@ function SeekerApp({ t, lang, setLang, me, onLogout }) {
                 <article key={s.id} onClick={()=>setDetail({s,m})} className="rounded-2xl border border-line p-4 active:bg-wash cursor-pointer">
                   <div className="flex items-start justify-between gap-3 mb-2.5">
                     <div className="min-w-0">
-                      <h3 className="text-[16px] font-bold tight truncate">{s.name}</h3>
-                      <p className="text-[12.5px] text-sub mt-0.5">{labelOf('biz',s.biz,lang)} · {labelOf('region',s.region,lang)}</p>
+                      <h3 className="text-[18px] font-bold tight truncate">{s.name}</h3>
+                      <p className="text-[14px] text-sub mt-0.5">{labelOf('biz',s.biz,lang)} · {labelOf('region',s.region,lang)}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <div className="num text-[20px] font-semibold text-seeker leading-none">{m.score}%</div>
-                      <div className="text-[10px] text-sub mt-1">{t.match}</div>
+                      <div className="num text-[22.5px] font-semibold text-seeker leading-none">{m.score}%</div>
+                      <div className="text-[11px] text-sub mt-1">{t.match}</div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -750,7 +750,7 @@ function SeekerApp({ t, lang, setLang, me, onLogout }) {
                   </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-line">
                     <Avatar name={s.broker?.name} tone="broker" size={24} />
-                    <span className="text-[12px] text-sub flex-1 truncate">
+                    <span className="text-[13.5px] text-sub flex-1 truncate">
                       {t.introducedBy} <b className="text-ink font-semibold">{s.broker?.name}</b>
                     </span>
                     {appliedIds.includes(s.id) && <Badge>{t.applied}</Badge>}
@@ -776,21 +776,21 @@ function SeekerApp({ t, lang, setLang, me, onLogout }) {
               return (
                 <div key={a.id} className={`rounded-2xl border p-4 ${open?'border-ok/40 bg-emerald-50/40':'border-line'}`}>
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className="text-[15px] font-bold truncate">{s?.name}</h3>
+                    <h3 className="text-[17px] font-bold truncate">{s?.name}</h3>
                     <Badge tone={map.tone}>{map.txt}</Badge>
                   </div>
-                  <p className="text-[12px] text-sub">{labelOf('biz',s?.biz,lang)} · {t.wage} {won(s?.wage)}{t.unit}</p>
+                  <p className="text-[13.5px] text-sub">{labelOf('biz',s?.biz,lang)} · {t.wage} {won(s?.wage)}{t.unit}</p>
                   {open && (
                     <div className="mt-3 pt-3 border-t border-ok/25">
-                      <div className="text-[11.5px] text-ok font-semibold mb-1.5">{t.contactOpen}</div>
+                      <div className="text-[13px] text-ok font-semibold mb-1.5">{t.contactOpen}</div>
                       <div className="flex items-center gap-2">
                         <Avatar name={s?.broker?.name} tone="broker" size={30} />
                         <div className="min-w-0">
-                          <div className="text-[13.5px] font-bold truncate">{s?.broker?.name}</div>
-                          <div className="text-[12.5px] text-ink/75 truncate">{ct || '...'}</div>
+                          <div className="text-[15px] font-bold truncate">{s?.broker?.name}</div>
+                          <div className="text-[14px] text-ink/75 truncate">{ct || '...'}</div>
                         </div>
                       </div>
-                      <p className="text-[11px] text-sub mt-2">{t.contactHint}</p>
+                      <p className="text-[12.5px] text-sub mt-2">{t.contactHint}</p>
                     </div>
                   )}
                 </div>
@@ -817,10 +817,10 @@ function JobDetail({ t, lang, data, applied, onApply }) {
     <div className="p-6 pb-8">
       <div className="w-10 h-1 rounded-full bg-line mx-auto mb-5" />
       <div className="flex items-start justify-between gap-3 mb-3">
-        <h2 className="text-[21px] font-bold tight leading-snug">{s.name}</h2>
+        <h2 className="text-[23.5px] font-bold tight leading-snug">{s.name}</h2>
         <div className="shrink-0 text-right">
-          <div className="num text-[24px] font-semibold text-seeker leading-none">{m.score}%</div>
-          <div className="text-[10px] text-sub mt-1">{t.match}</div>
+          <div className="num text-[27px] font-semibold text-seeker leading-none">{m.score}%</div>
+          <div className="text-[11px] text-sub mt-1">{t.match}</div>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -830,19 +830,19 @@ function JobDetail({ t, lang, data, applied, onApply }) {
         <Badge>{(s.shifts||[]).map(x=>labelOf('shift',x,lang)).join(' · ')}</Badge>
         <Badge>{t.hiring} {s.headcount}{t.people}</Badge>
       </div>
-      {s.memo && <p className="text-[14px] text-ink/85 leading-relaxed bg-wash rounded-xl p-4 mb-4">{s.memo}</p>}
-      <div className="text-[12px] text-sub mb-5">
+      {s.memo && <p className="text-[15.5px] text-ink/85 leading-relaxed bg-wash rounded-xl p-4 mb-4">{s.memo}</p>}
+      <div className="text-[13.5px] text-sub mb-5">
         {t.reason} · {m.reasons.length ? m.reasons.map(r=>REASON_TXT[lang][r]).join(' / ') : t.basic}
       </div>
       <div className="flex items-center gap-2.5 p-3.5 rounded-xl border border-line mb-5">
         <Avatar name={s.broker?.name} tone="broker" size={38} />
         <div className="min-w-0">
-          <div className="text-[11px] text-sub">{t.introducedBy}</div>
-          <div className="text-[14px] font-bold truncate">{s.broker?.name}</div>
+          <div className="text-[12.5px] text-sub">{t.introducedBy}</div>
+          <div className="text-[15.5px] font-bold truncate">{s.broker?.name}</div>
         </div>
       </div>
       <button disabled={applied} onClick={onApply}
-        className={`w-full h-14 rounded-2xl font-bold text-[16px] ${applied?'bg-wash text-sub':'bg-seeker text-white'}`}>
+        className={`w-full h-14 rounded-2xl font-bold text-[18px] ${applied?'bg-wash text-sub':'bg-seeker text-white'}`}>
         {applied?t.applied:t.apply}
       </button>
     </div>
@@ -903,17 +903,17 @@ function BrokerApp({ t, lang, setLang, me, refreshMe, onLogout }) {
 
   return (
     <Shell bar={<TabBar tabs={tabs} active={tab} onChange={setTab} tone="broker" />}>
+      {seats && tab !== 'CREDIT' && <SeatsBadge t={t} seats={seats} />}
       {err && <ErrorBox msg={err} onRetry={load} retryLabel={t.retry} />}
 
       {tab==='STORES' && (
         <>
-          <Header title={t.tabStores} right={<span className="num text-[12px] text-sub">{(stores||[]).length} {t.places}</span>} />
+          <Header title={t.tabStores} right={<span className="num text-[13.5px] text-sub">{(stores||[]).length} {t.places}</span>} />
           <div className="p-5 space-y-3">
-            {seats && <SeatsBanner t={t} seats={seats} />}
             <button onClick={()=>setFormOpen(true)}
-              className="w-full h-14 rounded-2xl border-2 border-dashed border-broker/45 text-broker font-bold text-[15px] flex items-center justify-center gap-2">
-              <span className="text-[20px] leading-none">+</span>{t.addStore}
-              <span className="num text-[12.5px]">+{won(CREDIT.STORE)} C</span>
+              className="w-full h-14 rounded-2xl border-2 border-dashed border-broker/45 text-broker font-bold text-[17px] flex items-center justify-center gap-2">
+              <span className="text-[22.5px] leading-none">+</span>{t.addStore}
+              <span className="num text-[14px]">+{won(CREDIT.STORE)} C</span>
             </button>
             {stores===null ? <Spinner label={t.loading} /> : (<>
               {stores.length===0 && <Empty title={t.emptyStores} body={t.emptyStoresSub} />}
@@ -923,8 +923,8 @@ function BrokerApp({ t, lang, setLang, me, refreshMe, onLogout }) {
                   <div key={s.id} className="rounded-2xl border border-line p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="text-[15.5px] font-bold tight truncate">{s.name}</h3>
-                        <p className="text-[12.5px] text-sub mt-0.5">
+                        <h3 className="text-[17.5px] font-bold tight truncate">{s.name}</h3>
+                        <p className="text-[14px] text-sub mt-0.5">
                           {labelOf('biz',s.biz,lang)} · {labelOf('region',s.region,lang)} · {t.wage} {won(s.wage)}{t.unit}
                         </p>
                       </div>
@@ -950,10 +950,10 @@ function BrokerApp({ t, lang, setLang, me, refreshMe, onLogout }) {
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar name={sk?.name} tone="seeker" size={42} />
                     <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-bold truncate">{sk?.name}</div>
-                      <div className="text-[12px] text-sub truncate">{s?.name}</div>
+                      <div className="text-[17px] font-bold truncate">{sk?.name}</div>
+                      <div className="text-[13.5px] text-sub truncate">{s?.name}</div>
                     </div>
-                    <div className="num text-[16px] font-semibold text-seeker shrink-0">{m.score}%</div>
+                    <div className="num text-[18px] font-semibold text-seeker shrink-0">{m.score}%</div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     <Badge tone="seeker">{sk?.visa}</Badge>
@@ -963,17 +963,17 @@ function BrokerApp({ t, lang, setLang, me, refreshMe, onLogout }) {
                   </div>
                   {a.status==='PENDING' && (
                     <div className="flex gap-2">
-                      <button onClick={()=>decide(a.id,'REJECTED')} className="h-12 px-5 rounded-xl border border-line text-[14px] font-semibold text-sub">{t.reject}</button>
-                      <button onClick={()=>decide(a.id,'ACCEPTED')} className="flex-1 h-12 rounded-xl bg-broker text-white text-[15px] font-bold flex items-center justify-center gap-1.5">
-                        {t.accept}<span className="num text-[12px] opacity-90">+{won(CREDIT.MATCH)} C</span>
+                      <button onClick={()=>decide(a.id,'REJECTED')} className="h-12 px-5 rounded-xl border border-line text-[15.5px] font-semibold text-sub">{t.reject}</button>
+                      <button onClick={()=>decide(a.id,'ACCEPTED')} className="flex-1 h-12 rounded-xl bg-broker text-white text-[17px] font-bold flex items-center justify-center gap-1.5">
+                        {t.accept}<span className="num text-[13.5px] opacity-90">+{won(CREDIT.MATCH)} C</span>
                       </button>
                     </div>
                   )}
                   {a.status==='ACCEPTED' && (
                     <div className="flex items-center gap-2">
                       <Badge tone="ok">{t.stAccepted}</Badge>
-                      <button onClick={()=>decide(a.id,'HIRED')} className="flex-1 h-12 rounded-xl bg-ok text-white text-[15px] font-bold flex items-center justify-center gap-1.5">
-                        {t.confirmFirstDay}<span className="num text-[12px] opacity-90">+{won(CREDIT.FIRSTDAY)} C</span>
+                      <button onClick={()=>decide(a.id,'HIRED')} className="flex-1 h-12 rounded-xl bg-ok text-white text-[17px] font-bold flex items-center justify-center gap-1.5">
+                        {t.confirmFirstDay}<span className="num text-[13.5px] opacity-90">+{won(CREDIT.FIRSTDAY)} C</span>
                       </button>
                     </div>
                   )}
@@ -998,41 +998,31 @@ function BrokerApp({ t, lang, setLang, me, refreshMe, onLogout }) {
   );
 }
 
-function SeatsBanner({ t, seats }) {
+function SeatsBadge({ t, seats }) {
   const { full_count, cap, remaining } = seats;
   const closed = remaining <= 0;
-  const pct = cap > 0 ? Math.min(100, Math.round(full_count / cap * 100)) : 100;
 
+  // 화면 우하단에 고정되는 둥근 네모 배지. 데이터 2개(남은 자리 / 상한)를 담는다.
   return (
-    <div className={`rounded-2xl p-4 ${closed ? 'bg-wash border border-line' : 'bg-broker text-white'}`}>
-      <div className="flex items-center justify-between mb-1">
-        <span className={`text-[12px] font-semibold ${closed ? 'text-sub' : 'text-white/85'}`}>
-          {t.seatsTitle}
-        </span>
-        {!closed && (
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">LIVE</span>
+    <div className="fixed z-30 right-4 bottom-28 pointer-events-none">
+      <div className={`pointer-events-auto rounded-2xl shadow-lg px-4 py-3 text-center min-w-[92px] ${
+        closed ? 'bg-wash border border-line' : 'bg-broker'}`}>
+        {closed ? (
+          <>
+            <div className="text-[12px] font-bold text-sub">{t.seatsTitle}</div>
+            <div className="text-[15px] font-bold tight text-sub mt-0.5">{t.seatsClosed}</div>
+          </>
+        ) : (
+          <>
+            <div className="text-[11px] font-semibold text-white/85 leading-tight">{t.seatsTitle}</div>
+            <div className="flex items-baseline justify-center gap-0.5 mt-1">
+              <span className="num text-[26px] font-bold text-white leading-none">{remaining}</span>
+              <span className="text-[12px] font-semibold text-white/85">{t.seatsLeft}</span>
+            </div>
+            <div className="num text-[10.5px] text-white/70 mt-1">{full_count} / {cap}</div>
+          </>
         )}
       </div>
-
-      {closed ? (
-        <div className="text-[17px] font-bold tight text-sub">{t.seatsClosed}</div>
-      ) : (
-        <>
-          <div className="flex items-baseline gap-1.5">
-            <span className="num text-[30px] font-bold leading-none">{remaining}</span>
-            <span className="text-[13px] font-semibold text-white/85">{t.seatsLeft}</span>
-          </div>
-          <div className="mt-3">
-            <div className="h-1.5 rounded-full bg-white/25 overflow-hidden">
-              <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: pct + '%' }} />
-            </div>
-            <div className="flex justify-between mt-1.5 text-[10.5px] text-white/70 num">
-              <span>{full_count} / {cap}</span>
-              <span>{t.seatsSub}</span>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
@@ -1053,30 +1043,30 @@ function CreditPage({ t, lang, me, ledger, fx, payout }) {
       <Header title={t.tabCredit} />
       <div className="p-5 space-y-5">
         <div className="rounded-2xl bg-ink text-white p-5 relative overflow-hidden">
-          {fx && <div className="absolute right-5 top-12 num text-[16px] font-bold text-credit credit-pop">+{won(fx)} C</div>}
+          {fx && <div className="absolute right-5 top-12 num text-[18px] font-bold text-credit credit-pop">+{won(fx)} C</div>}
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[12px] text-white/60">{t.myCredit}</span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md" style={{ background:tier.color+'26', color:tier.color }}>{tier[lang]}</span>
+            <span className="text-[13.5px] text-white/60">{t.myCredit}</span>
+            <span className="text-[12.5px] font-semibold px-2 py-0.5 rounded-md" style={{ background:tier.color+'26', color:tier.color }}>{tier[lang]}</span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="num text-[36px] font-semibold leading-none tracking-tight">{won(me.credits)}</span>
-            <span className="text-[15px] text-white/60 font-semibold">C</span>
+            <span className="num text-[40.5px] font-semibold leading-none tracking-tight">{won(me.credits)}</span>
+            <span className="text-[17px] text-white/60 font-semibold">C</span>
           </div>
           {/* 환산 금액 — tier 반영 */}
-          <div className="text-[12px] text-white/50 mt-1">
+          <div className="text-[13.5px] text-white/50 mt-1">
             = {won(wonAmt)} {t.worth}
             <span className={`ml-1.5 ${isPartial ? 'text-danger' : 'text-credit'}`}>
               ({t.rateLabel} {rate}%)
             </span>
           </div>
           {isPartial
-            ? <div className="mt-2 text-[11px] text-danger">{t.payoutPartial} · {t.payoutPartialNote}</div>
-            : <div className="mt-2 text-[11px] text-credit">{t.payoutFull}</div>}
+            ? <div className="mt-2 text-[12.5px] text-danger">{t.payoutPartial} · {t.payoutPartialNote}</div>
+            : <div className="mt-2 text-[12.5px] text-credit">{t.payoutFull}</div>}
           <div className="mt-5">
             <div className="h-1.5 rounded-full bg-white/15 overflow-hidden">
               <div className="h-full rounded-full transition-all duration-700" style={{ width:pct+'%', background:tier.color }} />
             </div>
-            <div className="flex justify-between mt-2 text-[11px] text-white/50">
+            <div className="flex justify-between mt-2 text-[12.5px] text-white/50">
               <span>{nt ? `${nt[lang]} ${t.toNext} ${won(nt.min-me.credits)} C` : t.maxTier}</span>
               <span className="num">{won(WITHDRAW_MIN)} C {t.withdrawFrom}</span>
             </div>
@@ -1084,33 +1074,33 @@ function CreditPage({ t, lang, me, ledger, fx, payout }) {
         </div>
 
         <button disabled={me.credits<WITHDRAW_MIN}
-          className="w-full py-3.5 rounded-2xl bg-credit text-white font-bold text-[15px] disabled:bg-wash disabled:text-sub">
+          className="w-full py-3.5 rounded-2xl bg-credit text-white font-bold text-[17px] disabled:bg-wash disabled:text-sub">
           {me.credits>=WITHDRAW_MIN ? t.withdraw : `${won(WITHDRAW_MIN)} C ${t.withdrawLocked}`}
         </button>
 
         <section>
-          <h3 className="text-[14px] font-bold tight mb-2.5">{t.earnRules}</h3>
+          <h3 className="text-[15.5px] font-bold tight mb-2.5">{t.earnRules}</h3>
           <div className="grid grid-cols-3 gap-2">
             {[[t.ruleStore,CREDIT.STORE],[t.ruleMatch,CREDIT.MATCH],[t.ruleFirst,CREDIT.FIRSTDAY]].map(([l,v])=>(
               <div key={l} className="rounded-xl border border-line p-3 text-center">
-                <div className="num text-[15px] font-semibold text-broker">+{won(v)}</div>
-                <div className="text-[10.5px] text-sub mt-1 leading-tight">{l}</div>
+                <div className="num text-[17px] font-semibold text-broker">+{won(v)}</div>
+                <div className="text-[12px] text-sub mt-1 leading-tight">{l}</div>
               </div>
             ))}
           </div>
         </section>
 
         <section>
-          <h3 className="text-[14px] font-bold tight mb-2.5">{t.history}</h3>
+          <h3 className="text-[15.5px] font-bold tight mb-2.5">{t.history}</h3>
           {ledger.length===0 && <Empty title={t.emptyHistory} />}
           <div className="space-y-1.5">
             {ledger.map(l=>(
               <div key={l.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-wash">
                 <div className="min-w-0">
-                  <div className="text-[13.5px] font-semibold truncate">{kindTxt[l.kind]||l.kind}</div>
-                  <div className="text-[11px] text-sub num">{new Date(l.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+                  <div className="text-[15px] font-semibold truncate">{kindTxt[l.kind]||l.kind}</div>
+                  <div className="text-[12.5px] text-sub num">{new Date(l.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
                 </div>
-                <div className="num text-[14px] font-bold text-broker shrink-0">+{won(l.amount)} C</div>
+                <div className="num text-[15.5px] font-bold text-broker shrink-0">+{won(l.amount)} C</div>
               </div>
             ))}
           </div>
@@ -1129,10 +1119,10 @@ function StoreForm({ t, lang, me, busy, onClose, onSave }) {
       <div className="w-10 h-1 rounded-full bg-line mx-auto mb-5" />
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-[20px] font-bold tight">{t.storeTitle}</h2>
-          <p className="num text-[12.5px] font-semibold text-broker mt-1">+{won(CREDIT.STORE)} C</p>
+          <h2 className="text-[22.5px] font-bold tight">{t.storeTitle}</h2>
+          <p className="num text-[14px] font-semibold text-broker mt-1">+{won(CREDIT.STORE)} C</p>
         </div>
-        <button onClick={onClose} className="text-sub text-[26px] leading-none px-1" aria-label={t.close}>×</button>
+        <button onClick={onClose} className="text-sub text-[29px] leading-none px-1" aria-label={t.close}>×</button>
       </div>
       <div className="space-y-5">
         <Field label={t.storeName}>
@@ -1154,12 +1144,12 @@ function StoreForm({ t, lang, me, busy, onClose, onSave }) {
           <Chips group="shift" value={f.shifts} onChange={v=>set('shifts',v)} multi tone="broker" lang={lang} />
         </Field>
         <Field label={t.memo} hint={t.optional}>
-          <textarea className="w-full h-24 p-3.5 rounded-xl border border-line text-[15px] resize-none"
+          <textarea className="w-full h-24 p-3.5 rounded-xl border border-line text-[17px] resize-none"
                     placeholder={t.memoPh} value={f.memo} onChange={e=>set('memo',e.target.value)} />
         </Field>
       </div>
       <button disabled={!ready||busy} onClick={()=>onSave({ ...f, wage:Number(f.wage), headcount:Number(f.headcount)||1 })}
-        className="w-full h-14 rounded-2xl bg-broker text-white font-bold text-[16px] disabled:opacity-30 mt-7">
+        className="w-full h-14 rounded-2xl bg-broker text-white font-bold text-[18px] disabled:opacity-30 mt-7">
         {busy?'...':t.saveAndEarn}
       </button>
     </div>
@@ -1174,27 +1164,27 @@ function MePage({ t, lang, setLang, me, onLogout, roleTxt, tone }) {
         <div className="flex items-center gap-3.5">
           <Avatar name={me.name} tone={tone} size={56} />
           <div className="min-w-0">
-            <div className="text-[18px] font-bold tight truncate">{me.name}</div>
+            <div className="text-[20px] font-bold tight truncate">{me.name}</div>
             <div className="mt-1"><Badge tone={tone}>{roleTxt}</Badge></div>
           </div>
         </div>
         <div className="rounded-2xl border border-line divide-y divide-line">
           <div className="flex items-center justify-between px-4 py-4">
-            <span className="text-[14px] font-semibold">{t.langLabel}</span>
+            <span className="text-[15.5px] font-semibold">{t.langLabel}</span>
             <div className="flex gap-1 p-1 rounded-lg bg-wash">
-              {[['ko','한국어'],['vi','Tiếng Việt']].map(([k,v])=>(
+              {[['vi','Tiếng Việt'],['ko','한국어']].map(([k,v])=>(
                 <button key={k} onClick={()=>setLang(k)}
-                  className={`px-3 h-8 rounded-md text-[12.5px] font-semibold ${lang===k?'bg-paper shadow-sm':'text-sub'}`}>{v}</button>
+                  className={`px-3 h-8 rounded-md text-[14px] font-semibold ${lang===k?'bg-paper shadow-sm':'text-sub'}`}>{v}</button>
               ))}
             </div>
           </div>
           <div className="flex items-center justify-between px-4 py-4">
-            <span className="text-[14px] font-semibold">{t.role}</span>
-            <span className="text-[13.5px] text-sub">{roleTxt}</span>
+            <span className="text-[15.5px] font-semibold">{t.role}</span>
+            <span className="text-[15px] text-sub">{roleTxt}</span>
           </div>
-          <div className="px-4 py-4"><span className="num text-[12px] text-sub">{APP_VERSION}</span></div>
+          <div className="px-4 py-4"><span className="num text-[13.5px] text-sub">{APP_VERSION}</span></div>
         </div>
-        <button onClick={onLogout} className="w-full py-3.5 rounded-2xl border border-line text-[14.5px] font-semibold text-sub">{t.logout}</button>
+        <button onClick={onLogout} className="w-full py-3.5 rounded-2xl border border-line text-[16px] font-semibold text-sub">{t.logout}</button>
       </div>
     </>
   );
@@ -1204,7 +1194,7 @@ function MePage({ t, lang, setLang, me, onLogout, roleTxt, tone }) {
    루트
    ============================================================ */
 function App() {
-  const [lang, setLang] = useState('ko');
+  const [lang, setLang] = useState('vi');
   const [booting, setBooting] = useState(true);
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
